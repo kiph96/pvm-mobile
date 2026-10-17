@@ -11,7 +11,7 @@ import {
 import { tv, useI18n } from '@/i18n';
 import { useOrgKey, useTemplateNames } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
-import { ago, dayLabel, hoursBetween, money, timeRange } from '@/utils/format';
+import { ago, dateTime, dayLabel, hoursBetween, money, signupState, timeRange } from '@/utils/format';
 import { wageText } from '@/utils/pay';
 
 export default function ShiftScreen() {
@@ -70,7 +70,10 @@ export default function ShiftScreen() {
               }} />
           </Row>
         ) : null}
-        {!isManager && shift.status === 'published' && upcoming && !mine && !myRequest && !swapFrom ? (
+        {!isManager && shift.status === 'published' && upcoming && !mine && !myRequest && !swapFrom && signupState(shift) !== 'open' ? (
+          <Badge label={signupState(shift) === 'closed' ? t('find.closed') : t('find.opensAt', { when: dateTime(shift.registrationOpensAt, shift.timezone) })}
+            tone={signupState(shift) === 'closed' ? 'neutral' : 'info'} icon={signupState(shift) === 'closed' ? 'lock-closed-outline' : 'time-outline'} />
+        ) : !isManager && shift.status === 'published' && upcoming && !mine && !myRequest && !swapFrom ? (
           <Button title={shift.openSlots > 0 ? t('shift.want') : t('shift.waitlist')} icon="hand-right-outline" full loading={busy === 'register'}
             onPress={() => run('register', () => api.registerForShift(shift.id),
               (r) => r.status === 'approved' ? t('shift.booked') : r.status === 'waitlisted' ? t('shift.onWaitlist') : t('shift.requestSent'))} />

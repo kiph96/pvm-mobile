@@ -24,6 +24,8 @@ export interface PolicyView {
 }
 export interface PolicyRules {
   registration?: { opens_days_before?: number; closes_hours_before?: number };
+  /** Shifts made automatically from templates for the next days_ahead days (server defaults: on, 14, published). */
+  schedule?: { auto_generate?: boolean; days_ahead?: number; auto_publish?: boolean };
   attendance?: { late_grace_minutes?: number; early_leave_grace_minutes?: number };
   points?: { allow_negative_balance?: boolean };
   violations?: Record<string, { points: number }>;
@@ -46,6 +48,12 @@ export interface MyEmploymentView {
   employmentId: UUID; storeId: UUID; storeName: string; storeTimeZone: string; role: string; status: string;
   startedAt: ISODateTime; currentWage: number | null; wageBasis: string | null; currency: string;
 }
+/** My own join request (employee side), named so it reads well before approval. */
+export interface MyEnrollmentView {
+  id: UUID; organizationId: UUID; organizationName: string; storeId: UUID; storeName: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'; requestedAt: ISODateTime; decidedAt: ISODateTime | null;
+}
+
 export interface EnrollmentView {
   id: UUID; organizationId: UUID; storeId: UUID; userId: UUID; displayName: string; status: string;
   requestedAt: ISODateTime; decidedAt: ISODateTime | null; employmentId: UUID | null; warning: string | null;
@@ -74,6 +82,8 @@ export interface ShiftView {
   id: UUID; storeId: UUID; templateId: UUID | null; localDate: ISODate; timezone: string;
   startsAt: ISODateTime; endsAt: ISODateTime; minStaff: number; optimalStaff: number; maxStaff: number;
   status: ShiftStatus; assignedCount: number; belowMinimum: boolean; openSlots: number;
+  /** Employees can sign up between these two instants (store policy: days before / hours before the start). */
+  registrationOpensAt: ISODateTime; registrationClosesAt: ISODateTime;
 }
 export interface AssignmentView {
   id: UUID; shiftId: UUID; storeId: UUID; employmentId: UUID; userId: UUID | null; displayName: string;
@@ -88,7 +98,7 @@ export interface RequestView {
   decidedAt: ISODateTime | null; assignmentId: UUID | null;
 }
 export interface ShiftDetail { shift: ShiftView; assignments: AssignmentView[]; requests: RequestView[] }
-export interface GenerateResult { created: ShiftView[]; alreadyExisting: number; warnings: string[] }
+export interface GenerateResult { created: ShiftView[]; alreadyExisting: number; skippedPast: number; warnings: string[] }
 export interface CreateShift {
   storeId: UUID; localDate: ISODate; localStart: LocalTime; localEnd: LocalTime;
   minStaff?: number | null; optimalStaff?: number | null; maxStaff?: number | null; publish: boolean;

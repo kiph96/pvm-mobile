@@ -42,15 +42,21 @@ export default function Team() {
         {tab === 'team' ? (
           team.isLoading ? <Loading /> : team.error ? <ErrorState error={team.error} onRetry={team.refetch} />
             : active.length === 0 ? (
-              <Empty icon="people-outline" title={t('team.emptyTitle')} message={t('team.emptyMsg')}
-                action={t('invite.title')} onAction={() => setInviteOpen(true)} />
+              pending.length > 0 ? (
+                <Empty icon="mail-unread-outline" title={t('team.emptyTitle')} message={t('team.waitingMsg', { n: pending.length })}
+                  action={t('team.review')} onAction={() => setTab('requests')} />
+              ) : (
+                <Empty icon="people-outline" title={t('team.emptyTitle')} message={t('team.emptyMsg')}
+                  action={t('invite.title')} onAction={() => setInviteOpen(true)} />
+              )
             ) : (
               <>
                 {active.map((e) => (
                   <ListItem key={e.employmentId} title={e.displayName}
                     subtitle={`${wageText(e.currentWage, e.wageBasis, e.currency)} · ${t('common.since', { date: dayLabel(localDateOf(e.startedAt)) })}`}
                     left={<Avatar name={e.displayName} />}
-                    right={e.status !== 'active' ? <StatusBadge status={e.status} /> : undefined}
+                    right={e.status !== 'active' ? <StatusBadge status={e.status} />
+                      : e.currentWage == null ? <Badge label={t('team.noWage')} tone="warning" icon="cash-outline" /> : undefined}
                     onPress={() => router.push(`/employee/${e.employmentId}?storeId=${e.storeId}`)} />
                 ))}
                 {former.length ? <Txt variant="small" muted style={{ marginTop: 8 }}>{t('team.former', { names: former.map((e) => e.displayName).join(', ') })}</Txt> : null}

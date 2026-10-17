@@ -46,8 +46,10 @@ export default function EmployeeScreen() {
       <Row gap={10}>
         <Card style={{ flex: 1, gap: 4 }} onPress={() => setWageOpen(true)}>
           <Txt variant="small" muted>{t('employee.wage')}</Txt>
-          <Txt variant="heading">{wageText(e.currentWage, e.wageBasis, e.currency)}</Txt>
-          <Txt variant="small" color={colors.primary}>{t('employee.change')}</Txt>
+          <Txt variant="heading" color={e.currentWage == null ? colors.warning : undefined}>
+            {e.currentWage == null ? t('team.noWage') : wageText(e.currentWage, e.wageBasis, e.currency)}
+          </Txt>
+          <Txt variant="small" color={colors.primary}>{e.currentWage == null ? t('employee.setWage') : t('employee.change')}</Txt>
         </Card>
         <Card style={{ flex: 1, gap: 4 }} onPress={() => setPointsOpen(true)}>
           <Txt variant="small" muted>{t('common.points')}</Txt>

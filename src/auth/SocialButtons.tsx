@@ -1,7 +1,7 @@
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { createAuthApi, type AuthProviders } from '@/api/http';
 import { useToast } from '@/components/toast';
@@ -10,6 +10,7 @@ import { useI18n } from '@/i18n';
 import { useSession, type AuthMethod } from '@/state/session';
 import { errorMessage } from '@/utils/format';
 import { facebookConfigured, googleConfigured, oauth } from './config';
+import { startWebSignIn, takeRedirectResult } from './webRedirect';
 
 type Exchange = (method: AuthMethod, providerToken: string) => Promise<void>;
 
@@ -31,6 +32,15 @@ export function SocialButtons({ serverUrl, onSignedIn }: { serverUrl: string; on
     return () => { live = false; };
   }, [serverUrl]);
 
+  // Web: back from the provider's page with a token (see webRedirect.ts)
+  useEffect(() => {
+    const r = takeRedirectResult();
+    if (!r) return;
+    if ('token' in r) exchange(r.provider, r.token);
+    else toast(r.error === 'state' || r.error === 'no_token' ? t('auth.failed') : r.error, 'error');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const exchange: Exchange = async (method, providerToken) => {
     setBusy(method);
     try {
@@ -48,12 +58,20 @@ export function SocialButtons({ serverUrl, onSignedIn }: { serverUrl: string; on
 
   const googleReady = googleConfigured() && !!server?.google;
   const facebookReady = facebookConfigured() && !!server?.facebook;
+  if (busy) {
+    return <Button title={t('auth.signingIn')} icon="hourglass-outline" variant="secondary" full loading />;
+  }
+  const web = Platform.OS === 'web';
   return (
     <View style={{ gap: 10 }}>
-      {googleReady
+      {googleReady && web
+        ? <Button title={t('signIn.google')} icon="logo-google" variant="secondary" full onPress={() => startWebSignIn('google')} />
+        : googleReady
         ? <GoogleButton busy={busy === 'google'} onToken={(tok) => exchange('google', tok)} onError={(m) => toast(m, 'error')} />
         : <Button title={t('signIn.google')} icon="logo-google" variant="secondary" disabled full />}
-      {facebookReady
+      {facebookReady && web
+        ? <Button title={t('auth.facebook')} icon="logo-facebook" variant="secondary" full onPress={() => startWebSignIn('facebook')} />
+        : facebookReady
         ? <FacebookButton busy={busy === 'facebook'} onToken={(tok) => exchange('facebook', tok)} onError={(m) => toast(m, 'error')} />
         : <Button title={t('auth.facebook')} icon="logo-facebook" variant="secondary" disabled full />}
       {!googleReady || !facebookReady ? (

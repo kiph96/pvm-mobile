@@ -11,7 +11,7 @@ import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
 import { useMyEmployments, useMyRequests, useMySchedule } from '@/state/staff';
-import { addDays, hoursBetween, money, relativeDay, timeRange, today } from '@/utils/format';
+import { addDays, dateTime, hoursBetween, money, relativeDay, signupState, timeRange, today } from '@/utils/format';
 import { wageText } from '@/utils/pay';
 
 /** Open shifts at my stores for the next two weeks. */
@@ -70,6 +70,10 @@ export default function FindShifts() {
                 <StaffingBar assigned={s.assignedCount} min={s.minStaff} optimal={s.optimalStaff} max={s.maxStaff} />
                 {status ? (
                   <Badge label={status === 'waitlisted' ? t('shift.onWaitlistBadge') : t('find.requested')} tone="warning" icon="hourglass-outline" />
+                ) : signupState(s) === 'closed' ? (
+                  <Badge label={t('find.closed')} tone="neutral" icon="lock-closed-outline" />
+                ) : signupState(s) === 'notYet' ? (
+                  <Badge label={t('find.opensAt', { when: dateTime(s.registrationOpensAt, s.timezone) })} tone="info" icon="time-outline" />
                 ) : (
                   <Button title={full ? t('find.joinWaitlist') : t('shift.want')} icon="hand-right-outline" variant={full ? 'secondary' : 'primary'}
                     loading={busy === s.id} onPress={() => ask(s)} />

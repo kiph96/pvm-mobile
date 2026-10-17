@@ -2,10 +2,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { router, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { captureRedirectResult } from '@/auth/webRedirect';
 import { ToastProvider } from '@/components/toast';
 import { ConfirmHost } from '@/components/ui';
 import { I18nProvider, useI18n } from '@/i18n';
@@ -14,8 +14,8 @@ import { SessionProvider, useSession } from '@/state/session';
 import { useTheme } from '@/theme';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
-// Web: when Google/Facebook redirect back into the sign-in popup, hand the result to the opener and close it.
-WebBrowser.maybeCompleteAuthSession();
+// Web: Google/Facebook send the browser back here with the token in the URL; take it before routing.
+captureRedirectResult();
 
 export default function RootLayout() {
   const [client] = useState(() => new QueryClient({

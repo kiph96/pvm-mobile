@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import type { MyOrganization } from '@/api/types';
 import { useAction } from '@/components/toast';
@@ -8,6 +8,7 @@ import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, IconBubble, Icon
 import { tv, useI18n } from '@/i18n';
 import { useApi, useSession } from '@/state/session';
 import { useSignOut } from '@/state/useSignOut';
+import { ago } from '@/utils/format';
 
 /** Choose which business to work in (an employee can work for several). */
 export default function WorkspacePicker() {
@@ -18,7 +19,22 @@ export default function WorkspacePicker() {
   const [run, busy] = useAction();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
+  const qc = useQueryClient();
   const orgs = useQuery({ queryKey: ['my-orgs', session?.userId], queryFn: api.myOrganizations, enabled: !!session });
+  // join requests not yet turned into a business here; poll while one is waiting so approval shows up by itself
+  const requests = useQuery({
+    queryKey: ['my-enrollments', session?.userId], queryFn: api.myEnrollments, enabled: !!session,
+    refetchInterval: (q) => (q.state.data ?? []).some((r) => r.status === 'pending') ? 15_000 : false,
+  });
+  const pendingCount = (requests.data ?? []).filter((r) => r.status === 'pending').length;
+  const lastPending = useRef(pendingCount);
+  useEffect(() => {
+    if (pendingCount < lastPending.current) qc.invalidateQueries({ queryKey: ['my-orgs'] });
+    lastPending.current = pendingCount;
+  }, [pendingCount, qc]);
+  const memberOf = new Set((orgs.data ?? []).map((o) => o.organizationId));
+  const shownRequests = (requests.data ?? []).filter((r) => r.status === 'pending' || (r.status === 'rejected' && !memberOf.has(r.organizationId)));
+  const refresh = () => { orgs.refetch(); requests.refetch(); };
 
   const open = async (o: MyOrganization) => {
     await chooseWorkspace({ id: o.organizationId, name: o.name, role: o.role });
@@ -37,10 +53,10 @@ export default function WorkspacePicker() {
   return (
     <Screen title={t('workspace.hello', { name: session?.displayName.split(' ').at(-1) ?? '' })} subtitle={t('workspace.where')}
       right={<IconButton icon="log-out-outline" label={t('workspace.signOut')} onPress={signOut} />}
-      onRefresh={orgs.refetch} refreshing={orgs.isRefetching}>
+      onRefresh={refresh} refreshing={orgs.isRefetching || requests.isRefetching}>
       {!orgs.data && !orgs.error ? <Loading /> : orgs.error ? <ErrorState error={orgs.error} onRetry={orgs.refetch} /> : (
         <>
-          {orgs.data.length === 0 ? (
+          {orgs.data.length === 0 && shownRequests.length === 0 ? (
             <Empty icon="storefront-outline" title={t('workspace.noneTitle')} message={t('workspace.noneMsg')} />
           ) : orgs.data.map((o) => (
             <ListItem key={o.organizationId} title={o.name} left={<Avatar name={o.name} size={46} />}
@@ -49,6 +65,17 @@ export default function WorkspacePicker() {
           ))}
         </>
       )}
+
+      {shownRequests.length > 0 ? (
+        <Section title={t('workspace.requestsTitle')}>
+          {shownRequests.map((r) => (
+            <ListItem key={r.id} title={r.storeName}
+              subtitle={r.status === 'pending' ? t('workspace.pendingHint', { when: ago(r.requestedAt) }) : t('workspace.rejectedHint')}
+              left={<IconBubble icon={r.status === 'pending' ? 'hourglass-outline' : 'close-circle-outline'} tone={r.status === 'pending' ? 'warning' : 'danger'} />}
+              right={<Badge label={t(`workspace.${r.status}`)} tone={r.status === 'pending' ? 'warning' : 'danger'} />} />
+          ))}
+        </Section>
+      ) : null}
 
       <Section title={t('workspace.newTitle')}>
         <Card onPress={() => router.push('/join')}>

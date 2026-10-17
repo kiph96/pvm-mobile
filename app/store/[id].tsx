@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import type { AccessKeyView, PolicyView } from '@/api/types';
+import type { AccessKeyView, PolicyRules, PolicyView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
 import { codeLabel, useStores } from '@/components/domain';
 import { PayRulesEditor } from '@/components/payRules';
@@ -52,7 +52,8 @@ export default function StoreSettings() {
       </Section>
 
       <Section title={t('storeSettings.templates')} action={t('common.add')} onAction={() => setTemplateOpen(true)}>
-        {templates.isLoading ? <Loading /> : (templates.data ?? []).length === 0 ? <Txt muted>{t('storeSettings.noTemplates')}</Txt>
+        {templates.isLoading ? <Loading /> : (templates.data ?? []).length === 0
+          ? <Txt muted>{autoSchedule(policy.data).on ? t('storeSettings.noTemplatesAuto', { n: autoSchedule(policy.data).days }) : t('storeSettings.noTemplates')}</Txt>
           : templates.data!.map((tp) => (
             <ListItem key={tp.id} title={tp.name}
               subtitle={`${tp.localStart.slice(0, 5)} – ${tp.localEnd.slice(0, 5)}${tp.overnight ? ` ${t('time.plusDay')}` : ''} · ${tp.weekdays.length === 7 ? t('time.everyDay') : tp.weekdays.map((d) => days[d - 1]).join(', ')}`}
@@ -64,9 +65,16 @@ export default function StoreSettings() {
 
       {policy.data ? <PayRulesEditor storeId={id} policy={policy.data} /> : null}
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
-      <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id} />
+      <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id}
+        autoDays={autoSchedule(policy.data).on ? autoSchedule(policy.data).days : null} />
     </Screen>
   );
+}
+
+/** Store's auto-schedule rule with the server's defaults (on, 14 days). */
+function autoSchedule(p: PolicyView | undefined) {
+  const s = p?.rules?.schedule;
+  return { on: s?.auto_generate !== false, days: s?.days_ahead ?? 14 };
 }
 
 function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView }) {
@@ -78,6 +86,9 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
   const set = <K extends keyof PolicyView>(k: K, v: PolicyView[K]) => setP((x) => ({ ...x, [k]: v }));
   const dirty = JSON.stringify(p) !== JSON.stringify(policy);
   const rules = p.rules ?? {};
+  const auto = autoSchedule(p);
+  const setSchedule = (patch: NonNullable<PolicyRules['schedule']>) =>
+    setP((x) => ({ ...x, rules: { ...(x.rules ?? {}), schedule: { ...(x.rules?.schedule ?? {}), ...patch } } }));
   return (
     <Section title={t('storeSettings.rules')}>
       <Card style={{ gap: 16 }}>
@@ -94,6 +105,14 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
         <Stepper label={t('shift.minimum')} value={p.minStaff} onChange={(v) => setP((x) => ({ ...x, minStaff: v, optimalStaff: Math.max(v, x.optimalStaff), maxStaff: Math.max(v, x.maxStaff) }))} />
         <Stepper label={t('shift.ideal')} value={p.optimalStaff} onChange={(v) => setP((x) => ({ ...x, optimalStaff: v, minStaff: Math.min(v, x.minStaff), maxStaff: Math.max(v, x.maxStaff) }))} />
         <Stepper label={t('shift.maximum')} value={p.maxStaff} min={1} onChange={(v) => setP((x) => ({ ...x, maxStaff: v, optimalStaff: Math.min(v, x.optimalStaff), minStaff: Math.min(v, x.minStaff) }))} />
+      </Card>
+      <Card style={{ gap: 16 }}>
+        <Txt variant="subheading">{t('storeSettings.autoTitle')}</Txt>
+        <Toggle label={t('storeSettings.autoSchedule')} hint={t('storeSettings.autoScheduleHint')} value={auto.on}
+          onChange={(v) => setSchedule({ auto_generate: v })} />
+        {auto.on ? (
+          <Stepper label={t('storeSettings.daysAhead')} value={auto.days} min={7} max={28} onChange={(v) => setSchedule({ days_ahead: v })} />
+        ) : null}
       </Card>
       <Card style={{ gap: 16 }}>
         <Txt variant="subheading">{t('storeSettings.signups')}</Txt>
@@ -127,7 +146,8 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
   );
 }
 
-function TemplateSheet({ visible, onClose, storeId }: { visible: boolean; onClose: () => void; storeId: string }) {
+/** @param autoDays how far ahead shifts are made automatically, or null when auto-schedule is off */
+function TemplateSheet({ visible, onClose, storeId, autoDays }: { visible: boolean; onClose: () => void; storeId: string; autoDays: number | null }) {
   const api = useApi();
   const { t } = useI18n();
   const [run, busy] = useAction();
@@ -146,10 +166,11 @@ function TemplateSheet({ visible, onClose, storeId }: { visible: boolean; onClos
       </Row>
       <Txt variant="small" muted>{t('storeSettings.repeats')}</Txt>
       <Row gap={6} wrap>{isoWeekdays().map((d, i) => <Chip key={d} label={d} selected={days.includes(i + 1)} onPress={() => toggle(i + 1)} />)}</Row>
-      <Txt variant="small" muted>{t('storeSettings.usesDefaults')}</Txt>
+      <Txt variant="small" muted>{t('storeSettings.usesDefaults')}{autoDays ? ' ' + t('storeSettings.autoNote', { n: autoDays }) : ''}</Txt>
       <Button title={t('storeSettings.saveTemplate')} icon="checkmark" full loading={busy === 't'} disabled={!valid}
         onPress={async () => {
-          if (await run('t', () => api.createTemplate({ storeId, name: name.trim(), localStart: start, localEnd: end, weekdays: days }), t('storeSettings.templateAdded'))) {
+          if (await run('t', () => api.createTemplate({ storeId, name: name.trim(), localStart: start, localEnd: end, weekdays: days }),
+            autoDays ? t('storeSettings.templateAddedAuto', { n: autoDays }) : t('storeSettings.templateAdded'))) {
             setName('');
             onClose();
           }

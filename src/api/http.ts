@@ -127,6 +127,7 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
 
     // employment
     joinStore: (accessKey: string) => call<T.EnrollmentView>('POST', '/enrollments', { accessKey }),
+    myEnrollments: () => call<T.MyEnrollmentView[]>('GET', '/me/enrollments'),
     enrollments: (storeId?: string, status?: string) =>
       call<T.EnrollmentView[]>('GET', '/enrollments' + q({ storeId, status })),
     approveEnrollment: (id: string) => call<T.EnrollmentView>('POST', `/enrollments/${id}/approve`),

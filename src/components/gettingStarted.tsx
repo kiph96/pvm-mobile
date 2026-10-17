@@ -9,11 +9,11 @@ import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
 import { useTheme } from '@/theme';
-import { addDays, today } from '@/utils/format';
 import { Badge, Button, Card, Row, Txt } from './ui';
 
 /**
- * Owner checklist for a new business: store → shift templates → staff → this week's schedule.
+ * Owner checklist for a new business: store → shift templates → staff. The schedule then fills itself
+ * from the templates (server auto-fill, two weeks ahead).
  * Each step links to where it is done; the card disappears once everything is set up.
  */
 export function GettingStarted({ stores, storesLoaded }: { stores: StoreView[]; storesLoaded: boolean }) {
@@ -22,18 +22,14 @@ export function GettingStarted({ stores, storesLoaded }: { stores: StoreView[]; 
   const { t } = useI18n();
   const { colors } = useTheme();
   const first = stores[0]?.id ?? null;
-  const from = today();
-  const to = addDays(from, 7);
   const templates = useQuery({ queryKey: ['templates', org, first], queryFn: () => api.templates(first!), enabled: !!first });
   const team = useQuery({ queryKey: ['employees', org, first], queryFn: () => api.employees(first!), enabled: !!first });
-  const shifts = useQuery({ queryKey: ['shifts', org, first, from, to], queryFn: () => api.shifts(first!, from, to), enabled: !!first });
 
-  if (!storesLoaded || (first && (templates.isLoading || team.isLoading || shifts.isLoading))) return null;
+  if (!storesLoaded || (first && (templates.isLoading || team.isLoading))) return null;
   const steps = [
     { key: 'store', done: stores.length > 0, go: () => router.push('/owner/stores?add=1') },
     { key: 'templates', done: (templates.data ?? []).length > 0, go: () => router.push(`/store/${first}`) },
     { key: 'staff', done: (team.data ?? []).some((e) => e.status !== 'ended'), go: () => router.push('/owner/team?invite=1') },
-    { key: 'schedule', done: (shifts.data ?? []).some((s) => s.status !== 'cancelled'), go: () => router.push('/owner/schedule') },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   if (doneCount === steps.length) return null;

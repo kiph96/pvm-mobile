@@ -27,7 +27,7 @@ interface User { id: string; displayName: string; email: string }
 interface Membership { id: string; org: string; userId: string; role: T.OrgRole }
 interface Employment { id: string; org: string; storeId: string; membershipId: string; status: string; startedAt: string; endedAt: string | null }
 interface Rate { id: string; employmentId: string; amount: number; basis: WageBasis; validFrom: string; validTo: string | null }
-interface Shift extends Omit<T.ShiftView, 'assignedCount' | 'belowMinimum' | 'openSlots'> { org: string }
+interface Shift extends Omit<T.ShiftView, 'assignedCount' | 'belowMinimum' | 'openSlots' | 'registrationOpensAt' | 'registrationClosesAt'> { org: string }
 interface Assignment { id: string; org: string; shiftId: string; employmentId: string; state: T.AssignmentView['state']; wage: number; basis: WageBasis; replaces: string | null }
 interface Request { id: string; org: string; shiftId: string; employmentId: string; status: T.RequestView['status']; requestedAt: string; decidedAt: string | null; assignmentId: string | null }
 interface Swap { id: string; org: string; from: string; to: string; status: T.SwapView['status']; requestedBy: string; acceptedBy: string | null; approvedBy: string | null; expiresAt: string; acceptedAt: string | null; decidedAt: string | null; newFrom: string | null; newTo: string | null }
@@ -167,7 +167,11 @@ export function createMockApi(actor: () => Actor): Api {
   const shiftView = (s: Shift): T.ShiftView => {
     const assigned = db.assignments.filter((a) => a.shiftId === s.id && live(a)).length;
     const { org: _o, ...rest } = s;
-    return { ...rest, assignedCount: assigned, belowMinimum: assigned < s.minStaff, openSlots: s.maxStaff - assigned };
+    const reg = db.policies[s.storeId]?.rules?.registration;
+    const start = Date.parse(s.startsAt);
+    return { ...rest, assignedCount: assigned, belowMinimum: assigned < s.minStaff, openSlots: s.maxStaff - assigned,
+      registrationOpensAt: new Date(start - (reg?.opens_days_before ?? 14) * DAY).toISOString(),
+      registrationClosesAt: new Date(start - (reg?.closes_hours_before ?? 12) * 3_600_000).toISOString() };
   };
   const assignmentView = (a: Assignment, showWage = true): T.AssignmentView => {
     const s = db.shifts.find((x) => x.id === a.shiftId)!;
@@ -236,6 +240,24 @@ export function createMockApi(actor: () => Actor): Api {
     };
   };
 
+  /** Same as the server's auto-fill: every active template, today .. today + days_ahead, published. */
+  const autoFill = (storeId: string) => {
+    const p = db.policies[storeId];
+    const rules = p.rules?.schedule;
+    if (rules?.auto_generate === false) return;
+    const first = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+    for (let i = 0; i <= (rules?.days_ahead ?? 14); i++) {
+      const d = new Date(Date.parse(`${first}T00:00:00Z`) + i * DAY).toISOString().slice(0, 10);
+      for (const tp of db.templates.filter((x) => x.storeId === storeId && x.status === 'active' && x.weekdays.includes(isoWeekday(d)))) {
+        if (db.shifts.some((s) => s.templateId === tp.id && s.localDate === d)) continue;
+        const s = makeShift(storeId, d, tp.localStart, tp.localEnd, tp.id,
+          { min: tp.minStaff ?? p.minStaff, opt: tp.optimalStaff ?? p.optimalStaff, max: tp.maxStaff ?? p.maxStaff },
+          rules?.auto_publish === false ? 'draft' : 'published');
+        if (Date.parse(s.startsAt) > Date.now()) db.shifts.push(s);
+      }
+    }
+  };
+
   // ---------------------------------------------------------- endpoints
   const api: Api = {
     createUser: (displayName, contactEmail) => wait(() => {
@@ -286,6 +308,7 @@ export function createMockApi(actor: () => Actor): Api {
       if (!(req.minStaff <= req.optimalStaff && req.optimalStaff <= req.maxStaff)) fail(400, t('mock.staffingOrder'));
       const prev = db.policies[storeId];
       db.policies[storeId] = { ...prev, ...req, rules: req.rules ?? prev.rules, id: id('c2'), version: prev.version + 1, effectiveFrom: nowIso() };
+      autoFill(storeId);
       return db.policies[storeId];
     }),
 
@@ -299,6 +322,12 @@ export function createMockApi(actor: () => Actor): Api {
         title: () => t('mock.nWantsJoin', { name: userName(x.userId), store: store.name }), availableAt: nowIso(), deliveredAt: null });
       return enrollmentView(x);
     }),
+    myEnrollments: () => wait(() => db.enrollments
+      .filter((x) => x.userId === me() && (x.status === 'pending' || Date.now() - Date.parse(x.decidedAt ?? '') < 14 * 86_400_000))
+      .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt))
+      .map((x) => ({ id: x.id, organizationId: x.org, organizationName: db.orgs.find((o) => o.id === x.org)!.name,
+        storeId: x.storeId, storeName: db.stores.find((s) => s.id === x.storeId)!.name,
+        status: x.status as T.MyEnrollmentView['status'], requestedAt: x.requestedAt, decidedAt: x.decidedAt }))),
     enrollments: (storeId, status) => wait(() => {
       manager();
       return db.enrollments.filter((x) => x.org === org() && (!storeId || x.storeId === storeId) && (!status || x.status === status)).map(enrollmentView);
@@ -364,18 +393,28 @@ export function createMockApi(actor: () => Actor): Api {
         overnight: req.localEnd <= req.localStart, weekdays: req.weekdays, minStaff: req.minStaff ?? null,
         optimalStaff: req.optimalStaff ?? null, maxStaff: req.maxStaff ?? null, status: 'active' };
       db.templates.push(t);
+      autoFill(req.storeId);
       return t;
     }),
     archiveTemplate: (tid) => wait(() => {
       manager();
       const tpl = db.templates.find((x) => x.id === tid) ?? fail(404, t('mock.notFound'));
       tpl.status = 'archived';
+      // like the server: upcoming shifts from this template that nobody took or asked for go away
+      for (const s of db.shifts) {
+        if (s.templateId === tid && (s.status === 'draft' || s.status === 'published') && Date.parse(s.startsAt) > Date.now()
+          && !db.assignments.some((a) => a.shiftId === s.id && live(a))
+          && !db.requests.some((r) => r.shiftId === s.id && (r.status === 'pending' || r.status === 'waitlisted'))) {
+          s.status = 'cancelled';
+        }
+      }
       return tpl;
     }),
     generateShifts: (storeId, from, to, publish) => wait(() => {
       manager();
       const created: T.ShiftView[] = [];
       let existing = 0;
+      let past = 0;
       const p = db.policies[storeId];
       for (let d = from; d <= to; d = new Date(Date.parse(`${d}T00:00:00Z`) + DAY).toISOString().slice(0, 10)) {
         for (const t of db.templates.filter((x) => x.storeId === storeId && x.status === 'active' && x.weekdays.includes(isoWeekday(d)))) {
@@ -385,11 +424,15 @@ export function createMockApi(actor: () => Actor): Api {
           }
           const s = makeShift(storeId, d, t.localStart, t.localEnd, t.id,
             { min: t.minStaff ?? p.minStaff, opt: t.optimalStaff ?? p.optimalStaff, max: t.maxStaff ?? p.maxStaff }, publish ? 'published' : 'draft');
+          if (Date.parse(s.startsAt) <= Date.now()) {
+            past++;
+            continue;
+          }
           db.shifts.push(s);
           created.push(shiftView(s));
         }
       }
-      return { created, alreadyExisting: existing, warnings: [] };
+      return { created, alreadyExisting: existing, skippedPast: past, warnings: [] };
     }),
     createShift: (req) => wait(() => {
       manager();

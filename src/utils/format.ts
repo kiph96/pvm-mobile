@@ -120,6 +120,13 @@ export function titleCase(s: string) {
   return s.replace(/[_.]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Whether employees can sign up for a shift right now. */
+export function signupState(s: { registrationOpensAt: string; registrationClosesAt: string }): 'open' | 'notYet' | 'closed' {
+  const now = Date.now();
+  if (now < Date.parse(s.registrationOpensAt)) return 'notYet';
+  return now > Date.parse(s.registrationClosesAt) ? 'closed' : 'open';
+}
+
 /** User-facing error text: a translated message for known backend codes, otherwise the server's own text. */
 export function errorMessage(e: unknown) {
   const code = (e as { code?: unknown } | null)?.code;

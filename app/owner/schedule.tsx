@@ -115,7 +115,8 @@ function FillSheet({ visible, onClose, storeId, from, to }: { visible: boolean; 
   const [publish, setPublish] = useState(true);
   const go = async () => {
     const r = await run('fill', () => api.generateShifts(storeId, from, to, publish),
-      (res) => res.created.length ? t('schedule.created', { n: res.created.length }) : t('schedule.alreadyFilled'));
+      (res) => res.created.length ? t('schedule.created', { n: res.created.length })
+        : res.skippedPast && !res.alreadyExisting ? t('schedule.allPast') : t('schedule.alreadyFilled'));
     if (r) onClose();
   };
   return (
