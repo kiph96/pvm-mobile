@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------
+# PVM full stack for integration testing:
+#   PostgreSQL + pvm-backend (from ../pvm) + this app's web build
+#
+#   docker compose up --build
+#     app (web)  http://localhost:8088
+#     API        http://localhost:8080
+#     database   localhost:5432 (pvm_owner / pvm_owner)
+#   docker compose down -v      # stop and wipe the database
+#
+# Expects the backend repo next to this one (D:\Workplace\pvm). Its demo
+# data (context "dev") is loaded, so you can sign in with the seeded people
+# from the "Developer server" section of the sign-in screen.
+#
+# Phones / emulators: run `npm start` instead and point the app at
+# http://<your-PC-LAN-IP>:8080 (Android emulator: http://10.0.2.2:8080).
+#
+# Google / Facebook sign-in: copy .env.example to .env and fill it in.
+# The same .env feeds the backend (secrets) and the web build (public IDs).
+# ---------------------------------------------------------------------
+name: pvm
+
+include:
+  - path: ../pvm/src/main/docker/docker-compose.yaml
+    env_file: .env
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        # The browser calls the API directly, so this is the host-visible address.
+        EXPO_PUBLIC_API_URL: ${PVM_API_URL:-http://localhost:8080}
+        EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-}
+        EXPO_PUBLIC_FACEBOOK_APP_ID: ${PVM_FACEBOOK_APP_ID:-}
+    image: pvm-mobile-web:dev
+    container_name: pvm-mobile-web
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:8088:80"
