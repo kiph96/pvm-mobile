@@ -63,8 +63,10 @@ function seed() {
     { id: U(7), displayName: 'Hoang Thu Em', email: 'em.hoang@gmail.com' },
   ];
   const orgs = [
-    { id: ORG1, name: 'K Coffee House', billingTimezone: TZ },
-    { id: ORG2, name: 'Lan Tea Corner', billingTimezone: TZ },
+    { id: ORG1, name: 'K Coffee House', billingTimezone: TZ, description: 'Cà phê rang xay tại chỗ · 2 cửa hàng ở TP.HCM' as string | null,
+      logoVersion: null as number | null, logo: null as string | null },
+    { id: ORG2, name: 'Lan Tea Corner', billingTimezone: TZ, description: null as string | null, logoVersion: null as number | null,
+      logo: null as string | null },
   ];
   const M = (n: number) => `a1000000-0000-4000-8000-00000000000${n}`;
   const memberships: Membership[] = [
@@ -77,9 +79,9 @@ function seed() {
     { id: M(7), org: ORG2, userId: U(6), role: 'employee' },
   ];
   const stores: (T.StoreView & { org: string })[] = [
-    { id: D1, org: ORG1, name: 'K Coffee - District 1', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2025-12-15T06:00:00+07:00' },
-    { id: D3, org: ORG1, name: 'K Coffee - District 3', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-02-20T06:00:00+07:00' },
-    { id: TD, org: ORG2, name: 'Lan Tea - Thu Duc', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-01-15T06:00:00+07:00' },
+    { id: D1, org: ORG1, name: 'K Coffee - District 1', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2025-12-15T06:00:00+07:00', address: '12 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM' },
+    { id: D3, org: ORG1, name: 'K Coffee - District 3', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-02-20T06:00:00+07:00', address: '45 Võ Văn Tần, Phường 6, Quận 3, TP.HCM' },
+    { id: TD, org: ORG2, name: 'Lan Tea - Thu Duc', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-01-15T06:00:00+07:00', address: null },
   ];
   const E = (n: number) => `b1000000-0000-4000-8000-00000000000${n}`;
   const employments: Employment[] = [
@@ -100,7 +102,7 @@ function seed() {
     { id: id('b2'), employmentId: E(6), amount: 26000, basis: 'hourly', validFrom: '2026-03-15T00:00:00+07:00', validTo: null },
   ];
   const baseRules: T.PolicyRules = {
-    registration: { opens_days_before: 14, closes_hours_before: 12 },
+    registration: { opens_days_before: 14, cutoff_enabled: true, closes_minutes_before: 15 },
     attendance: { late_grace_minutes: 5, early_leave_grace_minutes: 5 },
     points: { allow_negative_balance: true },
     violations: { LATE: { points: -5 }, NO_SHOW: { points: -20 }, EARLY_LEAVE: { points: -3 }, MISSED_CLOCK_OUT: { points: -2 } },
@@ -129,6 +131,7 @@ function seed() {
     runs: [] as T.RunView[], accessKeys: {} as Record<string, T.AccessKeyView>,
     digest: {} as Record<string, { enabled: boolean; sendAt: string; language: 'vi' | 'en' }>,
     // K Coffee House (2 stores, 5 people) pays for Pro 3 so the demo is not blocked; Lan Tea Corner is on the free plan
+    sales: [] as (Omit<T.SaleView, 'displayName' | 'paid' | 'mine' | 'canVoid' | 'commissionPercent'> & { org: string; assignmentId: string; rate: number })[],
     plans: { [ORG1]: { productId: 'pvm_pro_3', storeQuota: 3, expiresAt: new Date(Date.now() + 20 * DAY).toISOString() } } as
       Record<string, { productId: string; storeQuota: number; expiresAt: string }> };
 }
@@ -174,7 +177,7 @@ export function createMockApi(actor: () => Actor): Api {
     const start = Date.parse(s.startsAt);
     return { ...rest, assignedCount: assigned, belowMinimum: assigned < s.minStaff, openSlots: s.maxStaff - assigned,
       registrationOpensAt: new Date(start - (reg?.opens_days_before ?? 14) * DAY).toISOString(),
-      registrationClosesAt: new Date(start - (reg?.closes_hours_before ?? 12) * 3_600_000).toISOString() };
+      registrationClosesAt: new Date(start - (reg?.cutoff_enabled === false ? 0 : reg?.closes_minutes_before ?? 15) * 60_000).toISOString() };
   };
   const assignmentView = (a: Assignment, showWage = true): T.AssignmentView => {
     const s = db.shifts.find((x) => x.id === a.shiftId)!;
@@ -279,6 +282,29 @@ export function createMockApi(actor: () => Actor): Api {
       entitlement: 'pro', appUserId: o, devPurchase: true };
   };
 
+  // ---- sales (same rules as the server's SalesService)
+  const salesRule = (storeId: string) => {
+    const r = db.policies[storeId]?.rules?.sales;
+    return { enabled: !!r?.enabled, percent: Math.min(10, Math.max(2, r?.commission_percent ?? 2)) };
+  };
+  const saleWindow = (s: Shift) => Date.now() >= Date.parse(s.startsAt) && Date.now() <= Date.parse(s.endsAt) + 2 * 3_600_000;
+  const shiftSalesView = (shiftId: string): T.ShiftSales => {
+    const s = db.shifts.find((x) => x.id === shiftId) ?? fail(404, t('mock.notFound'));
+    const m = member();
+    const mgr = m.role === 'owner' || m.role === 'admin';
+    const live = db.assignments.filter((a) => a.shiftId === shiftId && a.state !== 'cancelled');
+    const mine = live.find((a) => memberOf(emp(a.employmentId)).id === m.id);
+    const rule = salesRule(s.storeId);
+    const sales = db.sales.filter((x) => x.shiftId === shiftId && (mgr || x.employmentId === mine?.employmentId)).map(({ org: _o, assignmentId: _a, rate, ...x }) => ({
+      ...x, displayName: userName(memberOf(emp(x.employmentId)).userId), commissionPercent: rate * 100, paid: false,
+      mine: x.employmentId === mine?.employmentId, canVoid: x.status === 'recorded' && (mgr || saleWindow(s)),
+    }));
+    const counted = sales.filter((x) => x.status === 'recorded');
+    return { shiftId, enabled: rule.enabled, commissionPercent: rule.percent, currency: 'VND',
+      canRecord: rule.enabled && s.status !== 'cancelled' && (mgr ? live.length > 0 : !!mine && mine.state !== 'no_show' && saleWindow(s)),
+      totalSales: counted.reduce((n, x) => n + x.amount, 0), totalCommission: counted.reduce((n, x) => n + x.commissionAmount, 0), sales };
+  };
+
   /** Same as the server's auto-fill: every active template, today .. today + days_ahead, published. */
   const autoFill = (storeId: string) => {
     const p = db.policies[storeId];
@@ -309,9 +335,12 @@ export function createMockApi(actor: () => Actor): Api {
       return { id: u.id, displayName: u.displayName, status: 'active' };
     }),
     myOrganizations: () => wait(() => db.memberships.filter((m) => m.userId === me())
-      .map((m) => ({ organizationId: m.org, name: db.orgs.find((o) => o.id === m.org)!.name, role: m.role }))),
+      .map((m) => {
+        const o = db.orgs.find((x) => x.id === m.org)!;
+        return { organizationId: m.org, name: o.name, role: m.role, description: o.description, logoVersion: o.logoVersion };
+      })),
     createOrganization: (name, billingTimezone) => wait(() => {
-      const o = { id: id('a0'), name, billingTimezone };
+      const o = { id: id('a0'), name, billingTimezone, description: null, logoVersion: null, logo: null };
       db.orgs.push(o);
       db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
       return { id: o.id, name, status: 'active', billingTimezone, myRole: 'owner' as const, stores: [] };
@@ -319,11 +348,47 @@ export function createMockApi(actor: () => Actor): Api {
     organization: () => wait(() => {
       const o = db.orgs.find((x) => x.id === org())!;
       return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s) };
+        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s), description: o.description, logoVersion: o.logoVersion };
     }),
+    updateOrganization: (req) => wait(() => {
+      manager();
+      const o = db.orgs.find((x) => x.id === org())!;
+      if (!req.name.trim()) fail(400, t('errors.validation_failed'), 'validation_failed');
+      Object.assign(o, { name: req.name.trim(), description: req.description?.trim() || null });
+      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
+        stores: [], description: o.description, logoVersion: o.logoVersion };
+    }),
+    uploadLogo: (req) => wait(() => {
+      manager();
+      const o = db.orgs.find((x) => x.id === org())!;
+      if (req.data.length > 1_400_000) fail(422, t('errors.logo_too_large'), 'logo_too_large');
+      // demo: the logo lives in memory as a data URI
+      Object.assign(o, { logo: `data:${req.contentType};base64,${req.data}`, logoVersion: (o.logoVersion ?? 0) + 1 });
+      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
+        stores: [], description: o.description, logoVersion: o.logoVersion };
+    }),
+    removeLogo: () => wait(() => {
+      manager();
+      const o = db.orgs.find((x) => x.id === org())!;
+      Object.assign(o, { logo: null, logoVersion: null });
+      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
+        stores: [], description: o.description, logoVersion: null };
+    }),
+    logoUrl: (organizationId, version) => (version ? db.orgs.find((x) => x.id === organizationId)?.logo ?? null : null),
     stores: () => wait(() => {
       member();
-      return db.stores.filter((s) => s.org === org()).map(({ org: _o, ...s }) => s);
+      // like the server: staff only see the stores they work at
+      const m = member();
+      const mine = new Set(db.employments.filter((e) => e.membershipId === m.id && e.status === 'active').map((e) => e.storeId));
+      return db.stores.filter((s) => s.org === org() && (m.role === 'owner' || m.role === 'admin' || mine.has(s.id))).map(({ org: _o, ...s }) => s);
+    }),
+    updateStore: (storeId, req) => wait(() => {
+      manager();
+      const s = db.stores.find((x) => x.id === storeId && x.org === org()) ?? fail(404, t('mock.notFound'));
+      if (!req.name.trim()) fail(400, t('errors.validation_failed'), 'validation_failed');
+      Object.assign(s, { name: req.name.trim(), address: req.address?.trim() || null });
+      const { org: _o, ...view } = s;
+      return view;
     }),
     storesOf: (organizationId) => wait(() => {
       if (!db.memberships.some((m) => m.org === organizationId && m.userId === me())) fail(403, t('mock.ownersOnly'));
@@ -332,7 +397,8 @@ export function createMockApi(actor: () => Actor): Api {
     createStore: (req) => wait(() => {
       manager();
       requireRoom(org(), 1, 0);
-      const store = { id: id('b0'), org: org(), name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso() };
+      const store = { id: id('b0'), org: org(), name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso(),
+        address: req.address?.trim() || null };
       db.stores.push(store);
       db.policies[store.id] = { ...db.policies[D1], id: id('c2'), version: 1, effectiveFrom: nowIso() };
       const key = newKey(store.id, 1);
@@ -408,7 +474,7 @@ export function createMockApi(actor: () => Actor): Api {
         const s = db.stores.find((x) => x.id === e.storeId)!;
         const r = rateNow(e.id);
         return { employmentId: e.id, storeId: s.id, storeName: s.name, storeTimeZone: s.timezone, role: 'employee', status: e.status,
-          startedAt: e.startedAt, currentWage: r?.amount ?? null, wageBasis: r?.basis ?? null, currency: s.currency };
+          startedAt: e.startedAt, currentWage: r?.amount ?? null, wageBasis: r?.basis ?? null, currency: s.currency, storeAddress: s.address };
       });
     }),
     setRate: (employmentId, amount, basis) => wait(() => {
@@ -484,6 +550,12 @@ export function createMockApi(actor: () => Actor): Api {
       const p = db.policies[req.storeId];
       const s = makeShift(req.storeId, req.localDate, req.localStart, req.localEnd, null,
         { min: req.minStaff ?? p.minStaff, opt: req.optimalStaff ?? p.optimalStaff, max: req.maxStaff ?? p.maxStaff }, req.publish ? 'published' : 'draft');
+      if (req.localEndDate) {
+        // multi-day shift (same limits as the server: ends within 6 days of the start date, after it starts)
+        const days = Math.round((Date.parse(`${req.localEndDate}T00:00:00Z`) - Date.parse(`${req.localDate}T00:00:00Z`)) / DAY);
+        s.endsAt = at(req.localEndDate, req.localEnd);
+        if (days < 0 || days > 6 || s.endsAt <= s.startsAt) fail(422, t('errors.invalid_shift_span'), 'invalid_shift_span');
+      }
       db.shifts.push(s);
       return shiftView(s);
     }),
@@ -740,6 +812,32 @@ export function createMockApi(actor: () => Actor): Api {
       const closed = db.periods.filter((p) => p.org === org() && p.status === 'closed');
       return closed.flatMap((p) => payslipsFor(p.startsAt, p.endsAt, org())).filter((s) => memberOf(emp(s.employmentId)).id === m.id);
     }),
+    shiftSales: (shiftId) => wait(() => shiftSalesView(shiftId)),
+    recordSale: (shiftId, req) => wait(() => {
+      const s = db.shifts.find((x) => x.id === shiftId) ?? fail(404, t('mock.notFound'));
+      const m = member();
+      const mgr = m.role === 'owner' || m.role === 'admin';
+      const rule = salesRule(s.storeId);
+      if (!rule.enabled) fail(422, t('errors.sales_disabled'), 'sales_disabled');
+      const live = db.assignments.filter((a) => a.shiftId === shiftId && a.state !== 'cancelled');
+      const a = req.employmentId && mgr ? live.find((x) => x.employmentId === req.employmentId)
+        : live.find((x) => memberOf(emp(x.employmentId)).id === m.id && x.state !== 'no_show');
+      if (!a) fail(403, t('errors.not_on_shift'), 'not_on_shift');
+      if (!mgr && !saleWindow(s)) fail(422, t('errors.sales_window_closed'), 'sales_window_closed');
+      const amount = Math.round(req.amount);
+      if (!(amount > 0)) fail(400, t('errors.invalid_amount'), 'invalid_amount');
+      const rate = rule.percent / 100;
+      db.sales.push({ id: id('e1'), org: s.org, shiftId, storeId: s.storeId, assignmentId: a!.id, employmentId: a!.employmentId, currency: 'VND',
+        amount, rate, commissionAmount: Math.round(amount * rate), note: req.note?.trim() || null, soldAt: nowIso(),
+        status: 'recorded', voidedAt: null, voidReason: null });
+      return shiftSalesView(shiftId);
+    }),
+    voidSale: (saleId, reason) => wait(() => {
+      const x = db.sales.find((y) => y.id === saleId) ?? fail(404, t('mock.notFound'));
+      if (x.status !== 'recorded') fail(409, t('errors.already_voided'), 'already_voided');
+      Object.assign(x, { status: 'voided', voidedAt: nowIso(), voidReason: reason?.trim() || null });
+      return shiftSalesView(x.shiftId);
+    }),
     plan: () => wait(() => {
       manager();
       return planView(org());
@@ -867,7 +965,7 @@ export function createMockApi(actor: () => Actor): Api {
       const m = memberOf(e);
       const store = db.stores.find((x) => x.id === e.storeId)!;
       const slip = byEmp.get(e.id) ?? { employmentId: e.id, userId: m.userId, displayName: userName(m.userId), storeId: store.id, storeName: store.name,
-        currency: 'VND', wages: 0, bonuses: 0, adjustments: 0, gross: 0, lines: [] };
+        currency: 'VND', wages: 0, bonuses: 0, adjustments: 0, commissions: 0, gross: 0, lines: [] };
       // same rules as the backend PayCalculator (demo: worked exactly the scheduled time)
       const pay = estimatePay(payRulesOf(db.policies[s.storeId].rules), a.basis, a.wage, s.startsAt.slice(11, 16), s.endsAt.slice(11, 16));
       slip.wages += pay.total;
@@ -875,6 +973,13 @@ export function createMockApi(actor: () => Actor): Api {
       slip.lines.push({ lineId: id('25'), runId: '', kind: 'shift', assignmentId: a.id, amount: pay.total, details: {
         shift_date: s.localDate, wage_basis: a.basis, wage_amount: a.wage, paid_minutes: pay.paidMinutes,
         overtime_premium: pay.overtime, night_premium: pay.night } });
+      // sales commission on this shift
+      for (const sale of db.sales.filter((x) => x.assignmentId === a.id && x.status === 'recorded' && x.commissionAmount > 0)) {
+        slip.commissions += sale.commissionAmount;
+        slip.gross += sale.commissionAmount;
+        slip.lines.push({ lineId: id('25'), runId: '', kind: 'commission', assignmentId: a.id, amount: sale.commissionAmount, details: {
+          sale_amount: sale.amount, commission_rate: sale.rate, note: sale.note, shift_date: s.localDate } });
+      }
       byEmp.set(e.id, slip);
     }
     return [...byEmp.values()];

@@ -87,7 +87,7 @@ function RunRow({ run }: { run: RunView }) {
           <View style={{ flex: 1 }}>
             <Txt>{s.displayName}</Txt>
             <Txt variant="small" muted>
-              {t('payroll.shifts', { n: s.lines.filter((l) => l.kind === 'shift').length })}{s.bonuses ? ` · ${t('payroll.bonus', { amount: money(s.bonuses, s.currency) })}` : ''}
+              {t('payroll.shifts', { n: s.lines.filter((l) => l.kind === 'shift').length })}{s.bonuses ? ` · ${t('payroll.bonus', { amount: money(s.bonuses, s.currency) })}` : ''}{s.commissions ? ` · ${t('payslips.commission', { amount: money(s.commissions, s.currency) })}` : ''}
             </Txt>
           </View>
           <Txt variant="subheading">{money(s.gross, s.currency)}</Txt>

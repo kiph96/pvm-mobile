@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import type { MyOrganization } from '@/api/types';
 import { tv, useI18n } from '@/i18n';
 import { useAllStores, useMyBusinesses } from '@/state/queries';
-import { useSession } from '@/state/session';
+import { useApi, useSession } from '@/state/session';
 import { Avatar, Badge, Button, ListItem, Loading, Row, Sheet, Txt } from './ui';
 
 /** Moves the app into another business (each business's stores, staff and schedule are separate). */
@@ -30,6 +30,7 @@ export function useBusinessSwitcher() {
 function BusinessSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const { session } = useSession();
+  const api = useApi();
   const businesses = useMyBusinesses();
   const { groups } = useAllStores();
   const switchTo = useSwitchBusiness();
@@ -43,7 +44,7 @@ function BusinessSheet({ visible, onClose }: { visible: boolean; onClose: () => 
         return (
           <ListItem key={b.organizationId} title={b.name}
             subtitle={[tv('role', b.role), n != null ? t('switcher.stores', { n }) : null].filter(Boolean).join(' · ')}
-            left={<Avatar name={b.name} />}
+            left={<Avatar name={b.name} uri={api.logoUrl(b.organizationId, b.logoVersion)} square />}
             right={current ? <Badge label={t('switcher.here')} tone="success" icon="checkmark" /> : undefined}
             onPress={async () => { onClose(); if (!current) await switchTo(b); }} />
         );

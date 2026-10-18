@@ -5,12 +5,12 @@ import { View } from 'react-native';
 
 import type { AssignmentView, ClockType } from '@/api/types';
 import { useBusinessSwitcher } from '@/components/businessSwitcher';
-import { AssignmentCard, shortStore } from '@/components/domain';
+import { AssignmentCard } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Badge, Button, Card, Empty, IconBubble, IconButton, Loading, Row, Screen, Section, Txt } from '@/components/ui';
 import { tv, useI18n } from '@/i18n';
 import { useNotifications, useOrgKey } from '@/state/queries';
-import { useApi, useSession } from '@/state/session';
+import { greetingName, useApi, useSession } from '@/state/session';
 import { useMyEmployments, useMyRequests, useMySchedule } from '@/state/staff';
 import { useTheme } from '@/theme';
 import { dateTime, localDateOf, relativeDay, time, timeRange } from '@/utils/format';
@@ -30,7 +30,7 @@ export default function StaffHome() {
   const points = useQueries({
     queries: (employments.data ?? []).map((e) => ({ queryKey: ['points', org, e.employmentId], queryFn: () => api.points(e.employmentId) })),
   });
-  const storeName = (id: string) => shortStore(employments.data?.find((e) => e.storeId === id)?.storeName ?? '');
+  const storeName = (id: string) => employments.data?.find((e) => e.storeId === id)?.storeName ?? '';
   const now = Date.now();
   const upcoming = (schedule.data ?? []).filter((a) => a.state === 'assigned' && Date.parse(a.endsAt) > now);
   const current = upcoming[0];
@@ -42,7 +42,7 @@ export default function StaffHome() {
   const refresh = () => Promise.all([employments.refetch(), schedule.refetch(), requests.refetch(), notifications.refetch(), ...points.map((p) => p.refetch())]);
 
   return (
-    <Screen title={session?.workspace?.name} subtitle={t('staff.hello', { name: session?.displayName.split(' ').at(-1) })}
+    <Screen title={session?.workspace?.name} subtitle={t('staff.hello', { name: greetingName(session) })}
       onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>

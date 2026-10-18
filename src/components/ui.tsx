@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView,
   StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -167,10 +167,18 @@ export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?:
 }
 
 const AVATAR_TONES: Tone[] = ['primary', 'accent', 'info', 'warning', 'success'];
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+/** Initials in a coloured circle, or the picture at `uri` (e.g. a Business logo) when there is one. */
+export function Avatar({ name, size = 40, uri, square }: { name: string; size?: number; uri?: string | null; square?: boolean }) {
   const { colors } = useTheme();
   const tone = AVATAR_TONES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_TONES.length];
   const t = toneColors(colors, tone);
+  const [broken, setBroken] = useState(false);
+  if (uri && !broken) {
+    return (
+      <Image source={{ uri }} accessibilityLabel={name} onError={() => setBroken(true)}
+        style={{ width: size, height: size, borderRadius: square ? size * 0.28 : size / 2, backgroundColor: colors.surfaceAlt }} />
+    );
+  }
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: t.fg, fontWeight: '800', fontSize: size * 0.36 }}>{initials(name)}</Text>
@@ -361,7 +369,8 @@ export function Stepper({ label, value, onChange, min = 0, max = 99 }: {
 export function Toggle({ label, hint, value, onChange }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void }) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={() => { tap(); onChange(!value); }}>
+    <Pressable onPress={() => { tap(); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={label}
+      accessibilityState={{ checked: value }} aria-checked={value}>
       <Row style={{ justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
           <Txt>{label}</Txt>

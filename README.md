@@ -106,6 +106,17 @@ The screen shows a live example of a shift's pay. Pay rules are saved as a new s
 
 On payslips, overtime and night pay appear as separate lines (`overtime_premium`, `night_premium` next to `hourly_wage`). Each line keeps a snapshot of the hours, minutes and rules used. Stores without pay rules keep the old behaviour: per-shift wages, with clocked time limited to the shift.
 
+## Sales and commission (retail / fashion stores)
+
+Turn it on per store in **Stores → store → Doanh số & hoa hồng** (sales & commission). It is off for new stores; the commission is **2 %** by default and can be set from **2 % to 10 %** in 0.5 % steps (`rules.sales` in the store policy).
+
+* **Staff** open their shift and tap **Ghi doanh số** (record sale): amount and an optional note. They can record from the start of the shift until 2 hours after it ends, and void their own mistakes in that window. They see their own sales and the commission earned.
+* **Owners/admins** see everyone's sales on the shift, can record for someone on the shift at any time, and void any sale that is not paid yet.
+* Each sale keeps the rate in force when it was recorded, so changing the rate never changes past sales.
+* **Payroll** pays each sale's commission once, as a separate payslip line (`commission`, component `sales_commission`), in the period the shift belongs to. A sale that is already on a payslip can no longer be voided.
+
+API: `GET/POST /api/shifts/{id}/sales`, `POST /api/sales/{id}/void`.
+
 ## Plans and in-app purchases
 
 | Plan | What it covers | Price |

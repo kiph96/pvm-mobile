@@ -57,7 +57,7 @@ export default function Stores() {
                 <IconBubble icon="storefront" tone="accent" size={46} />
                 <View style={{ flex: 1 }}>
                   <Txt variant="subheading">{s.name}</Txt>
-                  <Txt variant="small" muted>{s.timezone} · {s.currency}</Txt>
+                  <Txt variant="small" muted numberOfLines={2}>{s.address ?? `${s.timezone} · ${s.currency}`}</Txt>
                 </View>
                 <Badge label={tv('storeStatus', s.status)} tone={s.status === 'active' ? 'success' : 'neutral'} />
               </Row>
@@ -100,10 +100,11 @@ function AddStoreSheet({ visible, onClose }: { visible: boolean; onClose: () => 
   const { t } = useI18n();
   const [run, busy] = useAction();
   const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
   const [tz, setTz] = useState(TIMEZONES[0]);
   const [key, setKey] = useState<AccessKeyView | null>(null);
   const business = useSession().session?.workspace?.name;
-  const close = () => { setKey(null); setName(''); onClose(); };
+  const close = () => { setKey(null); setName(''); setAddress(''); onClose(); };
   return (
     <Sheet visible={visible} onClose={close} title={key ? t('stores.ready') : t('stores.newStore')}>
       {!key ? <Txt variant="small" muted>{t('stores.addsTo', { name: business ?? '' })}</Txt> : null}
@@ -115,13 +116,15 @@ function AddStoreSheet({ visible, onClose }: { visible: boolean; onClose: () => 
         </>
       ) : (
         <>
-          <Field label={t('stores.name')} value={name} onChangeText={setName} placeholder="K Coffee - Quận 7" autoFocus />
+          <Field label={t('stores.name')} value={name} onChangeText={setName} placeholder={t('stores.namePlaceholder')} autoFocus />
+          <Field label={t('storeInfo.addressOptional')} value={address} onChangeText={setAddress} maxLength={300}
+            placeholder={t('storeInfo.addressPlaceholder')} />
           <Txt variant="small" muted>{t('stores.timezone')}</Txt>
           <Row gap={8} wrap>{TIMEZONES.map((z) => <Chip key={z} label={z.split('/')[1].replace(/_/g, ' ')} selected={tz === z} onPress={() => setTz(z)} />)}</Row>
           <Txt variant="small" muted>{t('stores.defaults')}</Txt>
           <Button title={t('stores.create')} icon="checkmark" full loading={busy === 'create'} disabled={!name.trim()}
             onPress={async () => {
-              const r = await run('create', () => api.createStore({ name: name.trim(), timezone: tz, currency: 'VND' }), t('stores.created'));
+              const r = await run('create', () => api.createStore({ name: name.trim(), timezone: tz, currency: 'VND', address: address.trim() || null }), t('stores.created'));
               if (r) setKey(r.accessKey);
             }} />
         </>

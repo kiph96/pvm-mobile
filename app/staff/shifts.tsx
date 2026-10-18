@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import type { AssignmentView } from '@/api/types';
-import { AssignmentCard, shortStore } from '@/components/domain';
+import { AssignmentCard } from '@/components/domain';
 import { Button, Empty, ErrorState, Loading, Row, Screen, Segmented, Sheet, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
@@ -18,7 +18,7 @@ export default function MyShifts() {
   const [swapFor, setSwapFor] = useState<AssignmentView | null>(null);
   const employments = useMyEmployments();
   const schedule = useMySchedule(30, 30);
-  const storeName = (id: string) => shortStore(employments.data?.find((e) => e.storeId === id)?.storeName ?? '');
+  const storeName = (id: string) => employments.data?.find((e) => e.storeId === id)?.storeName ?? '';
   const now = Date.now();
   const all = schedule.data ?? [];
   const upcoming = all.filter((a) => Date.parse(a.endsAt) > now && a.state === 'assigned');

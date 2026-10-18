@@ -126,11 +126,10 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
 
         {/* live example so the owner sees what the settings mean */}
         <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 14, padding: 14, gap: 8 }}>
-          <Row style={{ justifyContent: 'space-between' }} wrap>
-            <Txt variant="subheading">{t('pay.example')}</Txt>
-            <Row gap={6}>
-              {EXAMPLES.map(([a, b], i) => <Chip key={a} label={`${a}–${b}`} selected={example === i} onPress={() => setExample(i)} />)}
-            </Row>
+          <Txt variant="subheading">{t('pay.example')}</Txt>
+          {/* own line + wrap: three time chips don't fit beside the title on a phone */}
+          <Row gap={6} wrap>
+            {EXAMPLES.map(([a, b], i) => <Chip key={a} label={`${a}–${b}`} selected={example === i} onPress={() => setExample(i)} />)}
           </Row>
           {pay.basis === 'per_shift' ? (
             <Txt variant="small">{wageText(180000, 'per_shift')}</Txt>
@@ -155,8 +154,8 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
 
 function ExampleLine({ label, amount, strong }: { label: string; amount: number; strong?: boolean }) {
   return (
-    <Row style={{ justifyContent: 'space-between' }}>
-      <Txt variant={strong ? 'subheading' : 'small'}>{label}</Txt>
+    <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <Txt variant={strong ? 'subheading' : 'small'} style={{ flex: 1 }}>{label}</Txt>
       <Txt variant={strong ? 'subheading' : 'small'}>{money(amount)}</Txt>
     </Row>
   );

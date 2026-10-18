@@ -1,16 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQueries } from '@tanstack/react-query';
 import React from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 
-import { shortStore } from '@/components/domain';
 import { ProfileMenu } from '@/components/profile';
-import { Card, IconBubble, Row, Screen, Section, Txt } from '@/components/ui';
+import { Button, Card, IconBubble, Row, Screen, Section, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useNotifications, useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
 import { useMyEmployments } from '@/state/staff';
 import { useTheme } from '@/theme';
-import { ago, dayLabel, localDateOf, money } from '@/utils/format';
+import { ago, dayLabel, localDateOf, mapsUrl, money } from '@/utils/format';
 import { wageText } from '@/utils/pay';
 
 export default function Me() {
@@ -41,7 +41,7 @@ export default function Me() {
               <Row>
                 <IconBubble icon="storefront" tone="accent" />
                 <View style={{ flex: 1 }}>
-                  <Txt variant="subheading">{shortStore(e.storeName)}</Txt>
+                  <Txt variant="subheading">{e.storeName}</Txt>
                   <Txt variant="small" muted>
                     {t('common.since', { date: dayLabel(localDateOf(e.startedAt)) })} · {wageText(e.currentWage, e.wageBasis, e.currency)}
                   </Txt>
@@ -51,6 +51,14 @@ export default function Me() {
                   <Txt variant="small" muted>{t('me.points')}</Txt>
                 </View>
               </Row>
+              {e.storeAddress ? (
+                <Row gap={8} style={{ alignItems: 'flex-start' }}>
+                  <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+                  <Txt variant="small" style={{ flex: 1 }}>{e.storeAddress}</Txt>
+                  <Button small variant="ghost" icon="navigate-outline" title={t('storeInfo.directions')}
+                    onPress={() => Linking.openURL(mapsUrl(e.storeAddress!))} />
+                </Row>
+              ) : null}
               {p?.entries.length ? (
                 <View style={{ gap: 6 }}>
                   {[...p.entries].reverse().slice(0, 3).map((x) => (

@@ -3,7 +3,8 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import { SHIFT_TONE, StatusBadge, shortStore, useStores } from '@/components/domain';
+import { SHIFT_TONE, StatusBadge, useStores } from '@/components/domain';
+import { SalesCard } from '@/components/salesCard';
 import { useAction } from '@/components/toast';
 import {
   Avatar, Badge, Button, Card, Empty, ErrorState, ListItem, Loading, Row, Screen, Section, Sheet, StaffingBar, Stepper, Txt, confirm,
@@ -45,7 +46,7 @@ export default function ShiftScreen() {
       <Card style={{ gap: 14, marginTop: 12 }}>
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1 }}>
-            <Txt variant="small" muted>{store ? shortStore(store.name) : ''} · {dayLabel(shift.localDate)}</Txt>
+            <Txt variant="small" muted>{store ? store.name : ''} · {dayLabel(shift.localDate)}</Txt>
             <Txt variant="title">{timeRange(shift.startsAt, shift.endsAt, tz)}</Txt>
             <Txt muted>{title} · {hoursBetween(shift.startsAt, shift.endsAt)}</Txt>
           </View>
@@ -111,6 +112,8 @@ export default function ShiftScreen() {
               ) : <StatusBadge status={a.state} />} />
           ))}
       </Section>
+
+      <SalesCard shift={shift} assignments={assignments} />
 
       {isManager ? (
         <Section title={t('shift.requests', { n: openRequests })}>

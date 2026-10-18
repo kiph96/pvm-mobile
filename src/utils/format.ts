@@ -30,7 +30,13 @@ export function time(iso: string, tz?: string) {
   return `${pad(p.h)}:${pad(p.min)}`;
 }
 
+/** "08:00 – 12:00"; a multi-day shift (over 24 h) names the end day: "08:00 → CN 19/10, 22:00". */
 export function timeRange(start: string, end: string, tz?: string) {
+  if (Date.parse(end) - Date.parse(start) > 86_400_000) {
+    const p = parts(end, tz);
+    const endDate = localDateOf(end, tz);
+    return `${time(start, tz)} → ${weekdayShort(endDate)} ${p.d}/${p.m}, ${time(end, tz)}`;
+  }
   return `${time(start, tz)} – ${time(end, tz)}`;
 }
 
@@ -108,6 +114,12 @@ export function money(amount: number | null | undefined, currency = 'VND') {
   return currency === 'VND' ? `${n} ₫` : `${n} ${currency}`;
 }
 
+/** 3.5 -> "3,5" (vi) / "3.5" (en), without trailing zeros. */
+export function pct(n: number) {
+  const s = String(Math.round(n * 100) / 100);
+  return currentLang() === 'vi' ? s.replace('.', ',') : s;
+}
+
 export function hoursBetween(start: string, end: string) {
   const h = (Date.parse(end) - Date.parse(start)) / 3_600_000;
   return t('time.hours', { n: Number.isInteger(h) ? h : h.toFixed(1) });
@@ -127,6 +139,11 @@ export function signupState(s: { registrationOpensAt: string; registrationCloses
   const now = Date.now();
   if (now < Date.parse(s.registrationOpensAt)) return 'notYet';
   return now > Date.parse(s.registrationClosesAt) ? 'closed' : 'open';
+}
+
+/** Opens the address in Google Maps (app or browser). */
+export function mapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 /** User-facing error text: a translated message for known backend codes, otherwise the server's own text. */

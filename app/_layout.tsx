@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
-import { router, Stack, useSegments } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { router, SplashScreen, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,7 +19,16 @@ import { ThemeProvider } from '@/theme/ThemeProvider';
 // Web: Google/Facebook send the browser back here with the token in the URL; take it before routing.
 captureRedirectResult();
 
+// keep the splash screen until the icon font is ready, so icons never draw as empty boxes
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
 export default function RootLayout() {
+  // on phones this needs expo-file-system (expo-asset downloads the font file through it)
+  const [fontsLoaded, fontError] = useFonts(Ionicons.font);
+  useEffect(() => {
+    if (fontError) console.warn('Icon font failed to load', fontError);
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => undefined);
+  }, [fontsLoaded, fontError]);
   const [client] = useState(() => new QueryClient({
     defaultOptions: { queries: { staleTime: 15_000, retry: 1, refetchOnWindowFocus: false } },
   }));
@@ -70,6 +81,7 @@ function AppStack() {
         <Stack.Screen name="store/[id]" options={{ headerShown: true, title: t('screens.store') }} />
         <Stack.Screen name="payroll" options={{ headerShown: true, title: t('screens.payroll') }} />
         <Stack.Screen name="billing" options={{ headerShown: true, title: t('screens.billing') }} />
+        <Stack.Screen name="business" options={{ headerShown: true, title: t('screens.business') }} />
         <Stack.Screen name="violations" options={{ headerShown: true, title: t('screens.violations') }} />
         <Stack.Screen name="notifications" options={{ headerShown: true, title: t('screens.notifications') }} />
         <Stack.Screen name="payslips" options={{ headerShown: true, title: t('screens.payslips') }} />

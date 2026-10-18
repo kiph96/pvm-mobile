@@ -2,6 +2,7 @@
 // {name} placeholders are filled by t(key, { name }); keys ending in _one are used when count === 1.
 export const en = {
   common: {
+    edit: 'Edit',
     approve: 'Approve', decline: 'Decline', reject: 'Reject', cancel: 'Cancel', confirm: 'Confirm', save: 'Save',
     done: 'Done', discard: 'Discard', add: 'Add', remove: 'Remove', archive: 'Archive', tryAgain: 'Try again',
     loading: 'Loading…', back: 'Back', close: 'Close', seeAll: 'See all', show: 'Show', hide: 'Hide',
@@ -35,7 +36,7 @@ export const en = {
     googleNote: 'Sign in with your Gmail or Facebook account. Two-step verification is coming next.',
     demoTitle: 'Explore the demo', demoNote: 'Pick a person to see the app through their eyes. Demo data lives on this device only.',
     hintOwner1: 'Owner · K Coffee House (2 stores)', hintOwner2: 'Owner · Lan Tea Corner', hintAn: 'Barista · works at 2 stores',
-    hintChi: 'Barista · District 1', hintDung: 'Works for 2 businesses',
+    hintChi: 'Barista · District 1', hintDung: 'Works for 2 Businesses',
   },
   auth: {
     facebook: 'Continue with Facebook', welcomeNew: 'Welcome to PVM, {name}! 🎉', failed: 'Sign-in was cancelled or failed',
@@ -45,7 +46,7 @@ export const en = {
   digest: {
     menu: 'Daily shift report', menuSub: "Every evening: is tomorrow fully staffed?",
     intro: "Every evening we check tomorrow's shifts at all your stores and tell you which ones still need people.",
-    enabled: 'Send me the daily report', enabledHint: 'A notification on this phone', time: 'Send at', timeHint: 'Your business time ({tz})',
+    enabled: 'Send me the daily report', enabledHint: 'A notification on this phone', time: 'Send at', timeHint: 'Your Business time ({tz})',
     language: 'Notification language', next: 'Next report: {when}', off: 'The daily report is off',
     saved: 'Saved — next report at {time}', preview: 'Tonight it would say', refresh: 'Refresh', sendNow: 'Send it to me now',
     sent: 'Sent! Check your notifications', devicesTitle: 'This phone',
@@ -77,6 +78,13 @@ export const en = {
   theme: { title: 'Appearance', system: 'System', light: 'Light', dark: 'Dark' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
+    logo_too_large: 'The logo can be at most 1 MB.', invalid_image: 'This file is not a PNG, JPEG or WebP picture.',
+    no_policy: 'The store has no rules for that time.',
+    invalid_shift_span: 'The shift must end after it starts and last at most 7 days.',
+    sales_disabled: 'Sales recording is off for this store.', sales_window_closed: 'Sales can be recorded from the start of the shift until 2 hours after it ends.',
+    not_on_shift: 'You are not on this shift.', sale_already_paid: 'Commission for this sale is already paid and it can no longer be voided.',
+    already_voided: 'This sale was already voided.', invalid_commission_rate: 'Commission must be 2% to 10% in 0.5% steps.',
+    invalid_sales_rules: 'Invalid sales settings.', invalid_amount: 'The amount must be greater than 0.',
     plan_upgrade_required: 'Your current plan does not cover another store or staff member. Upgrade to Pro to continue.',
     invalid_access_key: 'This access key is wrong or has expired. Ask the store owner for the current key.',
     network: 'Cannot reach the server. Check your connection and the server address.',
@@ -91,7 +99,7 @@ export const en = {
     shift_not_started: 'The shift has not started yet.',
     shift_not_open: 'The shift is not open.',
     shift_full: 'The shift is full.',
-    registration_closed: 'Sign-up for this shift has closed (store rule).',
+    registration_closed: 'Sign-up for this shift is not open or has closed (store rule).',
     invalid_staffing: 'Staffing must be min ≤ ideal ≤ max.',
     capacity_below_bookings: 'More people are already booked than the new maximum.',
     not_employed_at_store: 'This person does not work at this store.',
@@ -101,7 +109,7 @@ export const en = {
     overlap: 'This person already works at that time.',
     no_wage: 'Set a wage for this person before booking shifts.',
     employee_limit_reached: 'The store reached its employee limit. Raise it in Store rules.',
-    membership_suspended: 'Your membership in this business is suspended.',
+    membership_suspended: 'Your membership in this Business is suspended.',
     rate_not_after_current: 'The new wage must start after the current one.',
     invalid_pay_rules: 'Invalid pay rules.',
     invalid_time: 'Invalid time (use HH:mm).',
@@ -142,10 +150,10 @@ export const en = {
   },
   workspace: {
     hello: 'Hi, {name} 👋', where: 'Where are you working today?', signOut: 'Sign out',
-    noneTitle: 'No business yet', noneMsg: 'Join your store with the access key from your manager, or set up your own business.',
-    newTitle: 'Something new?', joinStore: 'Join a store with an access key', createOwn: 'Set up my own business',
-    newBusiness: 'New business', newBusinessNote: "You'll be the owner. Add stores, shifts and your team next.",
-    businessName: 'Business name', create: 'Create business', created: 'Business created',
+    noneTitle: 'No Business yet', noneMsg: 'Join your store with the access key from your manager, or set up your own Business.',
+    newTitle: 'Something new?', joinStore: 'Join a store with an access key', createOwn: 'Set up my own Business',
+    newBusiness: 'New Business', newBusinessNote: "You'll be the owner. Add stores, shifts and your team next.",
+    businessName: 'Business name', create: 'Create Business', created: 'Business created',
     requestsTitle: 'Join requests', pending: 'Waiting for approval', approved: 'Approved', rejected: 'Declined', cancelled: 'Cancelled',
     pendingHint: 'Sent {when} · the owner will review it soon', rejectedHint: 'Contact the store owner if you think this is a mistake.',
   },
@@ -159,7 +167,7 @@ export const en = {
     myShifts: 'My shifts', swaps: 'Swaps', me: 'Me',
   },
   screens: {
-    shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
+    business: 'Business profile', shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
   },
   owner: {
@@ -181,7 +189,8 @@ export const en = {
     noShiftsMsg: 'Add shift templates under Stores — the next 2 weeks are scheduled automatically. Or add a one-off shift for this day.', extraShift: 'Extra shift',
     fillTitle: 'Fill the week', fillNote: 'Creates shifts from every active template between {from} and {to}. Existing shifts are kept and past days are skipped.',
     createShifts: 'Create shifts', created: '{n} shifts created', alreadyFilled: 'Week already filled', allPast: 'These days are over — switch to next week', manageTemplates: 'Manage templates',
-    extraTitle: 'Extra shift · {date}', maxPeople: 'Max people', shiftAdded: 'Shift added',
+    extraTitle: 'Extra shift · {date}', multiDay: 'Multi-day shift', multiDayHint: 'One continuous shift over several days (e.g. an event or stock watch). Staff take it once for the whole span.',
+    days: 'Days (including the start day)', endsOn: 'Ends ({date})', multiDaySummary: 'From {from} to {to} · {hours} h', maxPeople: 'Max people', shiftAdded: 'Shift added',
   },
   shiftCard: {
     understaffed: 'Understaffed', moreIdeal: '{n} more ideal', full: 'Fully staffed',
@@ -218,12 +227,12 @@ export const en = {
     reported: 'Issue reported',
   },
   stores: {
-    business: 'Business you are viewing', acrossBusinesses: '{n} stores · {b} businesses', otherBusiness: 'In {name} — tap to switch there', addsTo: 'The new store will belong to {name}.', 
+    business: 'Business you are viewing', acrossBusinesses: '{n} stores · {b} Businesses', otherBusiness: 'In {name} — tap to switch there', addsTo: 'The new store will belong to {name}.', 
     title: 'Stores', locations: '{n} locations', locations_one: '1 location', add: 'Add store', firstTitle: 'Add your first store',
     firstMsg: 'Each store gets its own shifts, team and access key.', upTo: 'Up to {n} staff', perShift: '{min}/{opt}/{max} per shift',
     auto: 'Auto-approve', youApprove: 'You approve', ready: 'Store ready! 🎉',
     shareNote: "Share this key with your staff so they can join. It's shown only now — you can create a new one anytime.",
-    newStore: 'New store', name: 'Store name', timezone: 'Timezone', defaults: 'Default: 10 staff, 1 / 2 / 4 people per shift. You can change it in store settings.',
+    newStore: 'New store', name: 'Store name', namePlaceholder: 'K Coffee - District 7', timezone: 'Timezone', defaults: 'Default: 10 staff, 1 / 2 / 4 people per shift. You can change it in store settings.',
     create: 'Create store', created: 'Store created',
   },
   storeSettings: {
@@ -235,9 +244,11 @@ export const en = {
     archiveTitle: 'Archive template?', archiveMsg: 'No new shifts will be made from it. Upcoming shifts nobody has taken are cancelled; shifts with people stay.', archived: 'Template archived',
     rules: 'Store rules', teamSize: 'Team size', version: 'version {n}', included: 'Employees included', hardLimit: 'Hard limit',
     hardLimitHint: 'Block new joins when the limit is reached', defaultsTitle: 'Default people per shift', signups: 'Sign-ups & swaps',
+    cutoff: 'Close sign-up {n} minutes before start', cutoffOnHint: 'Staff cannot take a shift in the last {n} minutes before it starts.',
+    cutoffOffHint: 'Off: staff can take a shift right up to its start time.',
     autoApprove: 'Auto-approve shift sign-ups', autoApproveHint: 'Otherwise you approve each request', swapApproval: 'Swaps need my approval',
     pointsSystem: 'Points system', reward: '🎁 {name}: {cost} points → {amount} bonus', saveRules: 'Save rules',
-    rulesSaved: 'Rules saved — they apply to new shifts', newTemplate: 'New shift template', templateName: 'Name',
+    rulesSaved: 'Rules saved — they apply to new shifts', newTemplate: 'New shift template', templateName: 'Name', templatePlaceholder: 'Morning',
     repeats: 'Repeats on', usesDefaults: "Uses the store's default people per shift.", saveTemplate: 'Save template', templateAdded: 'Template added',
     templateAddedAuto: 'Template added — the next {n} days are scheduled', autoNote: 'Shifts are created and published for the next {n} days automatically.',
     autoTitle: 'Automatic schedule', autoSchedule: 'Create shifts from templates', autoScheduleHint: 'Every day new shifts are added so the schedule is always ready ahead. Shifts you cancelled are not recreated.',
@@ -248,7 +259,7 @@ export const en = {
   more: {
     title: 'More', payroll: 'Payroll', payrollSub: 'Pay periods, runs and payslips', violations: 'Attendance & violations',
     violationsSub: 'Late, no-show and points', notifications: 'Notifications', billing: 'Plan & billing', billingSub: 'Your PVM subscription',
-    switch: 'Switch business', switchSub: 'Work somewhere else', signOut: 'Sign out', signOutTitle: 'Sign out?',
+    switch: 'Switch Business', switchSub: 'Work somewhere else', signOut: 'Sign out', signOutTitle: 'Sign out?',
     signOutMsg: 'You can sign back in anytime.', demo: 'Demo data', version: 'PVM · K Tech · v1.0.0',
   },
   payroll: {
@@ -259,8 +270,33 @@ export const en = {
     from: 'From', to: 'To (inclusive)', createPeriod: 'Create period', periodCreated: 'Pay period created',
   },
   switcher: {
-    title: 'Switch business', note: 'Each business has its own stores, staff, schedule and plan.', here: 'Viewing',
+    title: 'Switch Business', note: 'Each Business has its own stores, staff, schedule and plan.', here: 'Viewing',
     stores: '{n} stores', join: 'Join with a key', all: 'All', change: 'Switch', open: 'Open',
+  },
+  business: {
+    menu: 'Business profile', menuSub: 'Name, description and logo', logo: 'Logo', logoHint: 'A square picture, shown in your staff\'s Business list.',
+    addLogo: 'Add logo', changeLogo: 'Change logo', removeLogo: 'Remove logo', removeLogoTitle: 'Remove the logo?', removeLogoMsg: 'The Business will show its initials instead.',
+    logoSaved: 'Logo updated', logoRemoved: 'Logo removed', readFailed: 'Could not read this picture. Please choose another one.',
+    details: 'Details', description: 'Description', descriptionPlaceholder: 'e.g. Fresh-roasted coffee shops in Ho Chi Minh City',
+    visibleTo: 'Staff see the name, description and logo when they choose a Business.', saved: 'Business profile saved',
+  },
+  storeInfo: {
+    title: 'Store details', noAddress: 'No address yet — add one so staff know where to go.', editTitle: 'Edit store details',
+    address: 'Address', addressOptional: 'Address (optional)', addressPlaceholder: 'Street, ward, district, city',
+    addressHint: 'Staff see this address and can open directions.', saved: 'Store details saved',
+    fixed: 'Timezone ({tz}) and currency ({currency}) cannot change because shifts and pay depend on them.', directions: 'Directions',
+  },
+  sales: {
+    title: 'Sales this shift', record: 'Record sale', recordTitle: 'Record a sale', totalAll: 'Total sales', totalMine: 'Your sales',
+    commission: 'Commission {pct}%', none: 'No sales yet.', turnedOff: 'Sales recording is turned off for this store.',
+    windowNote: 'You can record sales from the start of the shift until 2 hours after it ends.',
+    void: 'Void', voidTitle: 'Void this sale?', voidMsg: 'The {amount} sale will not earn commission.', voided: 'Sale voided',
+    voidedBadge: 'voided', paid: 'Paid on a payslip', seller: 'Seller', amount: 'Sale amount ({currency})',
+    note: 'Note (optional)', notePlaceholder: 'e.g. 2 shirts, 1 pair of jeans', preview: 'Commission {pct}%: +{amount}',
+    save: 'Save sale', saved: '{amount} recorded',
+    settingsTitle: 'Sales & commission', enable: 'Staff record sales on their shifts',
+    enableHint: 'For fashion and retail stores. Staff earn a commission on their sales, added to their payslip.',
+    rate: 'Commission', example: 'Example: selling {amount} earns {commission}. A new rate applies to sales recorded from now on.',
   },
   plan: {
     current: 'Current plan', free: 'Free', proN: 'Pro · {n} stores', test: 'Test',
@@ -324,9 +360,9 @@ export const en = {
     title: 'Me', payslips: 'My payslips', payslipsSub: 'What you earned per pay period', record: 'My attendance record',
     joinAnother: 'Join another store', joinAnotherSub: 'Use an access key', myStores: 'My stores', points: 'points',
   },
-  payslips: { none: 'No payslips yet', noneMsg: 'They appear after your manager runs payroll.', wages: 'Wages {amount}', bonus: 'Bonus {amount}' },
+  payslips: { none: 'No payslips yet', noneMsg: 'They appear after your manager runs payroll.', wages: 'Wages {amount}', bonus: 'Bonus {amount}', commission: 'Commission {amount}' },
   mock: {
-    notSignedIn: 'Not signed in', chooseBusiness: 'Choose a business first', notMember: 'You are not a member of this business',
+    notSignedIn: 'Not signed in', chooseBusiness: 'Choose a Business first', notMember: 'You are not a member of this Business',
     ownersOnly: 'Only owners and admins can do this', badKey: 'That access key is not valid. Ask the store owner for the current key.',
     publishFirst: 'Publish the shift before assigning people', shiftFull: 'This shift is full (max {n})',
     busy: 'This person already works at that time', notAtStore: 'You do not work at this store', closed: 'Registration is closed for this shift',

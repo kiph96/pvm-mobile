@@ -43,7 +43,14 @@
           "defaultChannel": "daily-digest"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PVM dùng ảnh bạn chọn làm logo cho Business.",
+          "cameraPermission": false
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "http://localhost:8080"

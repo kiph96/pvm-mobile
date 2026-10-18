@@ -6,7 +6,7 @@ import type { MyOrganization } from '@/api/types';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, IconBubble, IconButton, ListItem, Loading, Row, Screen, Section, Sheet, Txt } from '@/components/ui';
 import { tv, useI18n } from '@/i18n';
-import { useApi, useSession } from '@/state/session';
+import { greetingName, useApi, useSession } from '@/state/session';
 import { useSignOut } from '@/state/useSignOut';
 import { ago } from '@/utils/format';
 
@@ -51,7 +51,7 @@ export default function WorkspacePicker() {
   };
 
   return (
-    <Screen title={t('workspace.hello', { name: session?.displayName.split(' ').at(-1) ?? '' })} subtitle={t('workspace.where')}
+    <Screen title={t('workspace.hello', { name: greetingName(session) })} subtitle={t('workspace.where')}
       right={<IconButton icon="log-out-outline" label={t('workspace.signOut')} onPress={signOut} />}
       onRefresh={refresh} refreshing={orgs.isRefetching || requests.isRefetching}>
       {!orgs.data && !orgs.error ? <Loading /> : orgs.error ? <ErrorState error={orgs.error} onRetry={orgs.refetch} /> : (
@@ -59,7 +59,8 @@ export default function WorkspacePicker() {
           {orgs.data.length === 0 && shownRequests.length === 0 ? (
             <Empty icon="storefront-outline" title={t('workspace.noneTitle')} message={t('workspace.noneMsg')} />
           ) : orgs.data.map((o) => (
-            <ListItem key={o.organizationId} title={o.name} left={<Avatar name={o.name} size={46} />}
+            <ListItem key={o.organizationId} title={o.name} subtitle={o.description ?? undefined}
+              left={<Avatar name={o.name} size={46} uri={api.logoUrl(o.organizationId, o.logoVersion)} square />}
               right={<Badge label={tv('role', o.role)} tone={o.role === 'employee' ? 'info' : 'accent'} />}
               onPress={() => open(o)} />
           ))}

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import type { ShiftView } from '@/api/types';
-import { StorePicker, shortStore } from '@/components/domain';
+import { StorePicker } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Badge, Button, Card, Empty, Loading, Row, Screen, StaffingBar, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
@@ -46,7 +46,7 @@ export default function FindShifts() {
       <StorePicker stores={stores} value={selected} onChange={setStoreId} />
       {employment?.currentWage ? (
         <Card tone="success" style={{ marginBottom: 14 }}>
-          <Txt>{t('find.earn', { amount: wageText(employment.currentWage, employment.wageBasis, employment.currency), store: shortStore(employment.storeName) })}</Txt>
+          <Txt>{t('find.earn', { amount: wageText(employment.currentWage, employment.wageBasis, employment.currency), store: employment.storeName })}</Txt>
         </Card>
       ) : null}
       {employments.isLoading || lists.some((l) => l.isLoading) ? <Loading /> : open.length === 0 ? (

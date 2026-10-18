@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { oauth } from './config';
 
 /**
@@ -56,7 +58,8 @@ let captured: RedirectResult | null = null;
 
 /** Run once at startup, before routing: takes the provider's answer out of the URL. */
 export function captureRedirectResult() {
-  if (typeof window === 'undefined' || !window.location.hash) return;
+  // phones have a `window` but no `window.location`: this flow is for the browser only
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location?.hash) return;
   const params = new URLSearchParams(window.location.hash.slice(1));
   const raw = sessionStorage.getItem(PENDING_KEY);
   if (!raw || !params.get('state')) return;

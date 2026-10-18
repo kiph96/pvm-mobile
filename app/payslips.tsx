@@ -28,9 +28,10 @@ export default function Payslips() {
                 <Row gap={16}>
                   <Txt variant="small">{t('payslips.wages', { amount: money(s.wages, s.currency) })}</Txt>
                   {s.bonuses ? <Txt variant="small">{t('payslips.bonus', { amount: money(s.bonuses, s.currency) })}</Txt> : null}
+                  {s.commissions ? <Txt variant="small">{t('payslips.commission', { amount: money(s.commissions, s.currency) })}</Txt> : null}
                 </Row>
                 <Txt variant="small" muted>{t('payroll.shifts', { n: s.lines.filter((l) => l.kind === 'shift').length })}</Txt>
-                {s.lines.slice(0, 8).map((l) => {
+                {s.lines.filter((l) => l.kind !== 'commission').slice(0, 8).map((l) => {
                   const d = (l.details ?? {}) as Record<string, unknown>;
                   const date = (d.shift_date ?? d.date) as string | undefined;
                   const extras = [

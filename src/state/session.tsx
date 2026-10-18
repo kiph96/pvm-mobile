@@ -27,6 +27,8 @@ export interface Session {
   serverUrl: string;
   userId: string;
   displayName: string;
+  /** first name for greetings (Google given_name / Facebook first_name); absent for demo and older sessions */
+  givenName?: string;
   /** How a server session was signed in (absent for demo). */
   method?: AuthMethod;
   workspace: Workspace | null;
@@ -142,7 +144,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     signInWithTokens: async (url, method, tokens) => {
       await setTokens(toStored(tokens));
-      await persist({ mode: 'server', serverUrl: url, userId: tokens.user.id, displayName: tokens.user.displayName, method, workspace: null });
+      await persist({ mode: 'server', serverUrl: url, userId: tokens.user.id, displayName: tokens.user.displayName,
+        givenName: tokens.givenName ?? undefined, method, workspace: null });
     },
     chooseWorkspace: async (w) => {
       if (sessionRef.current) await persist({ ...sessionRef.current, workspace: w });
@@ -161,4 +164,13 @@ export function useSession() {
 
 export function useApi() {
   return useSession().api;
+}
+
+/**
+ * Name to greet someone with: their first name when the sign-in provider gave one, otherwise the full name.
+ * (Taking a word of the display name is wrong half the time: Google shows "Kiên Phạm Trung", Vietnamese
+ * order is "Phạm Trung Kiên".)
+ */
+export function greetingName(session: Pick<Session, 'displayName' | 'givenName'> | null | undefined) {
+  return session?.givenName?.trim() || session?.displayName || '';
 }

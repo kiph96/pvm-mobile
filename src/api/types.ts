@@ -9,13 +9,24 @@ export type LocalTime = string; // HH:mm[:ss]
 // ---------------------------------------------------------------- organization
 export interface UserView { id: UUID; displayName: string; status: string }
 export type OrgRole = 'owner' | 'admin' | 'payroll' | 'employee';
-export interface MyOrganization { organizationId: UUID; name: string; role: OrgRole }
+export interface MyOrganization {
+  organizationId: UUID; name: string; role: OrgRole;
+  description?: string | null;
+  /** null = no logo; see api.logoUrl */
+  logoVersion?: number | null;
+}
 export interface StoreView {
   id: UUID; name: string; timezone: string; currency: string; status: string; openedAt: ISODateTime;
+  /** street address shown to staff (null when not set) */
+  address: string | null;
 }
 export interface OrganizationView {
   id: UUID; name: string; status: string; billingTimezone: string; myRole: OrgRole; stores: StoreView[];
+  description?: string | null; logoVersion?: number | null;
 }
+export interface UpdateOrganization { name: string; description: string | null }
+/** base64 image bytes (no data: prefix), PNG / JPEG / WebP up to 1 MB */
+export interface UploadLogo { contentType: 'image/png' | 'image/jpeg' | 'image/webp'; data: string }
 export interface AccessKeyView { storeId: UUID; version: number; accessKey: string; expiresAt: ISODateTime }
 export interface PolicyView {
   id: UUID; version: number; effectiveFrom: ISODateTime; employeeLimit: number;
@@ -23,7 +34,8 @@ export interface PolicyView {
   registrationMode: 'owner_approval' | 'automatic'; swapApprovalRequired: boolean; rules: PolicyRules | null;
 }
 export interface PolicyRules {
-  registration?: { opens_days_before?: number; closes_hours_before?: number };
+  /** Sign-up window: opens N days before; with cutoff_enabled (default on) closes N minutes (default 15) before the start. */
+  registration?: { opens_days_before?: number; cutoff_enabled?: boolean; closes_minutes_before?: number };
   /** Shifts made automatically from templates for the next days_ahead days (server defaults: on, 14, published). */
   schedule?: { auto_generate?: boolean; days_ahead?: number; auto_publish?: boolean };
   attendance?: { late_grace_minutes?: number; early_leave_grace_minutes?: number };
@@ -33,10 +45,13 @@ export interface PolicyRules {
   rewards?: Record<string, { min_points: number; points_cost: number; amount: number; window: string }>;
   /** How worked time becomes pay (see src/utils/pay.ts). Absent on stores created before pay rules. */
   pay?: import('@/utils/pay').PayRulesJson | null;
+  /** Staff record their sales on shifts and earn commission_percent (2–10 %, default 2) of each sale. */
+  sales?: { enabled?: boolean; commission_percent?: number };
   [key: string]: unknown;
 }
 export interface StoreCreated { store: StoreView; policy: PolicyView; accessKey: AccessKeyView }
-export interface CreateStore { name: string; timezone: string; currency: string }
+export interface CreateStore { name: string; timezone: string; currency: string; address?: string | null }
+export interface UpdateStore { name: string; address: string | null }
 export interface UpdatePolicy {
   employeeLimit: number; employeeLimitMode: 'advisory' | 'hard'; minStaff: number; optimalStaff: number;
   maxStaff: number; registrationMode: 'owner_approval' | 'automatic'; swapApprovalRequired: boolean;
@@ -47,6 +62,7 @@ export interface UpdatePolicy {
 export interface MyEmploymentView {
   employmentId: UUID; storeId: UUID; storeName: string; storeTimeZone: string; role: string; status: string;
   startedAt: ISODateTime; currentWage: number | null; wageBasis: string | null; currency: string;
+  storeAddress: string | null;
 }
 /** My own join request (employee side), named so it reads well before approval. */
 export interface MyEnrollmentView {
@@ -102,6 +118,8 @@ export interface GenerateResult { created: ShiftView[]; alreadyExisting: number;
 export interface CreateShift {
   storeId: UUID; localDate: ISODate; localStart: LocalTime; localEnd: LocalTime;
   minStaff?: number | null; optimalStaff?: number | null; maxStaff?: number | null; publish: boolean;
+  /** multi-day shift: the date it ends (up to 6 days after localDate); leave out for a normal shift */
+  localEndDate?: ISODate | null;
 }
 export interface SwapView {
   id: UUID; status: 'requested' | 'accepted' | 'approved' | 'rejected' | 'cancelled' | 'expired';
@@ -141,7 +159,7 @@ export interface PayslipLine {
 }
 export interface Payslip {
   employmentId: UUID; userId: UUID; displayName: string; storeId: UUID; storeName: string; currency: string;
-  wages: number; bonuses: number; adjustments: number; gross: number; lines: PayslipLine[];
+  wages: number; bonuses: number; adjustments: number; commissions: number; gross: number; lines: PayslipLine[];
 }
 export interface Estimate {
   planCode: string; currency: string; activeStores: number; activeEmployees: number; baseFee: number;
@@ -190,3 +208,18 @@ export interface PlanView {
   needed: 'free' | 'pro' | 'contact'; neededTier: PlanTier | null; overLimit: boolean; tiers: PlanTier[];
   entitlement: string; appUserId: UUID; devPurchase: boolean;
 }
+
+// ---------------------------------------------------------------- sales on a shift
+export interface SaleView {
+  id: UUID; shiftId: UUID; storeId: UUID; employmentId: UUID; displayName: string; currency: string;
+  amount: number; commissionPercent: number; commissionAmount: number; note: string | null; soldAt: ISODateTime;
+  status: 'recorded' | 'voided'; voidedAt: ISODateTime | null; voidReason: string | null;
+  /** already on a payslip (can no longer be voided) */
+  paid: boolean; mine: boolean; canVoid: boolean;
+}
+/** Staff see their own sales on the shift; owners/admins everyone's. Totals leave voided sales out. */
+export interface ShiftSales {
+  shiftId: UUID; enabled: boolean; commissionPercent: number; currency: string; canRecord: boolean;
+  totalSales: number; totalCommission: number; sales: SaleView[];
+}
+export interface RecordSale { amount: number; note?: string | null; employmentId?: UUID | null }

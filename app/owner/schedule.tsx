@@ -132,23 +132,46 @@ function FillSheet({ visible, onClose, storeId, from, to }: { visible: boolean; 
 function AddShiftSheet({ visible, onClose, storeId, date }: { visible: boolean; onClose: () => void; storeId: string; date: string }) {
   const api = useApi();
   const { t } = useI18n();
+  const { colors } = useTheme();
   const [run, busy] = useAction();
   const [start, setStart] = useState('08:00');
   const [end, setEnd] = useState('12:00');
   const [max, setMax] = useState(3);
   const [publish, setPublish] = useState(true);
-  const valid = /^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end);
+  // multi-day shift (e.g. Fri 08:00 -> Sun 22:00): off unless the owner turns it on
+  const [multiDay, setMultiDay] = useState(false);
+  const [days, setDays] = useState(2);
+  const timesOk = /^\d{2}:\d{2}$/.test(start) && /^\d{2}:\d{2}$/.test(end);
+  const endDate = multiDay ? addDays(date, days - 1) : null;
+  const span = timesOk && endDate
+    ? Math.round((Date.parse(`${endDate}T${end}:00Z`) - Date.parse(`${date}T${start}:00Z`)) / 60_000) : null;
+  const valid = timesOk && (span == null || span > 0);
+  const close = () => { setMultiDay(false); setDays(2); onClose(); };
   const go = async () => {
     const r = await run('add', () => api.createShift({ storeId, localDate: date, localStart: start, localEnd: end,
-      minStaff: 1, optimalStaff: Math.min(2, max), maxStaff: max, publish }), t('schedule.shiftAdded'));
-    if (r) onClose();
+      minStaff: 1, optimalStaff: Math.min(2, max), maxStaff: max, publish, localEndDate: endDate }), t('schedule.shiftAdded'));
+    if (r) close();
   };
   return (
-    <Sheet visible={visible} onClose={onClose} title={t('schedule.extraTitle', { date: dayLabel(date) })}>
+    <Sheet visible={visible} onClose={close} title={t('schedule.extraTitle', { date: dayLabel(date) })}>
       <Row gap={10}>
         <View style={{ flex: 1 }}><Field label={t('common.starts')} value={start} onChangeText={setStart} placeholder="08:00" /></View>
-        <View style={{ flex: 1 }}><Field label={t('common.ends')} value={end} onChangeText={setEnd} placeholder="12:00" /></View>
+        <View style={{ flex: 1 }}>
+          <Field label={multiDay ? t('schedule.endsOn', { date: dayLabel(endDate!) }) : t('common.ends')} value={end} onChangeText={setEnd} placeholder="12:00"
+            hint={!multiDay && timesOk && end <= start ? t('common.endsNextDay') : undefined} />
+        </View>
       </Row>
+      <Toggle label={t('schedule.multiDay')} hint={t('schedule.multiDayHint')} value={multiDay} onChange={setMultiDay} />
+      {multiDay ? (
+        <>
+          <Stepper label={t('schedule.days')} value={days} onChange={setDays} min={2} max={7} />
+          {span != null ? (
+            span > 0
+              ? <Txt variant="small" muted>{t('schedule.multiDaySummary', { from: `${dayLabel(date)} ${start}`, to: `${dayLabel(endDate!)} ${end}`, hours: Math.round(span / 6) / 10 })}</Txt>
+              : <Txt variant="small" color={colors.danger}>{t('errors.invalid_shift_span')}</Txt>
+          ) : null}
+        </>
+      ) : null}
       <Stepper label={t('schedule.maxPeople')} value={max} onChange={setMax} min={1} max={20} />
       <Toggle label={t('common.publishNow')} value={publish} onChange={setPublish} />
       <Button title={t('schedule.addShift')} icon="add" onPress={go} loading={busy === 'add'} disabled={!valid} full />

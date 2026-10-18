@@ -5,13 +5,13 @@ import { View } from 'react-native';
 
 import type { AssignmentView } from '@/api/types';
 import { useBusinessSwitcher } from '@/components/businessSwitcher';
-import { ShiftCard, shortStore, useStores } from '@/components/domain';
+import { ShiftCard, useStores } from '@/components/domain';
 import { GettingStarted } from '@/components/gettingStarted';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, IconButton, Loading, Row, Screen, Section, Stat, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useAllStores, useApprovals, useNotifications, useOrgKey } from '@/state/queries';
-import { useApi, useSession } from '@/state/session';
+import { greetingName, useApi, useSession } from '@/state/session';
 import { ago, fullDate, localDateOf, relativeDay, timeRange, today } from '@/utils/format';
 
 export default function OwnerHome() {
@@ -30,7 +30,7 @@ export default function OwnerHome() {
   const todays = useQueries({
     queries: stores.map((s) => ({ queryKey: ['shifts', org, s.id, day, day], queryFn: () => api.shifts(s.id, day, day) })),
   });
-  const storeName = (id: string) => shortStore(stores.find((s) => s.id === id)?.name ?? '');
+  const storeName = (id: string) => stores.find((s) => s.id === id)?.name ?? '';
   const pendingRequests = approvals.requests.data?.filter((r) => r.status === 'pending') ?? [];
   const todayShifts = todays.flatMap((q) => q.data ?? []).filter((s) => s.status !== 'cancelled')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -42,7 +42,7 @@ export default function OwnerHome() {
 
   return (
     <Screen title={session?.workspace?.name ?? t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
-      subtitle={t('owner.greeting', { part: t(`time.${greeting()}`), name: session?.displayName.split(' ').at(-1) })}
+      subtitle={t('owner.greeting', { part: t(`time.${greeting()}`), name: greetingName(session) })}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>
 

@@ -96,14 +96,9 @@ export function StorePicker({ stores, value, onChange }: { stores: { id: string;
   if (stores.length <= 1) return null;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }} style={{ marginBottom: 12 }}>
-      {stores.map((s) => <Chip key={s.id} label={shortStore(s.name)} icon="storefront-outline" selected={s.id === value} onPress={() => onChange(s.id)} />)}
+      {stores.map((s) => <Chip key={s.id} label={s.name} icon="storefront-outline" selected={s.id === value} onPress={() => onChange(s.id)} />)}
     </ScrollView>
   );
-}
-
-export function shortStore(name: string) {
-  const i = name.indexOf(' - ');
-  return i > 0 ? name.slice(i + 3) : name;
 }
 
 /** Translated label for a policy code such as LATE or PERFECT_SHIFT. */

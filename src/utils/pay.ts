@@ -64,6 +64,20 @@ function roundMinutes(m: number, step: number, mode: string) {
   return Math.round(m / step) * step;
 }
 
+/** Same as PayCalculator.overtimeMinutes: shifts over 24 h apply the threshold to each 24-hour block. */
+export function overtimeMinutes(paid: number, window: number, after: number) {
+  if (window <= 1440 || paid === 0) return Math.max(0, paid - after);
+  let overtime = 0;
+  let assigned = 0;
+  for (let offset = 0; offset < window; offset += 1440) {
+    const block = Math.min(1440, window - offset);
+    const blockPaid = offset + 1440 >= window ? paid - assigned : Math.round((paid * block) / window);
+    assigned += blockPaid;
+    overtime += Math.max(0, blockPaid - after);
+  }
+  return overtime;
+}
+
 /**
  * Pay for a shift worked from `start` to `end` (local "HH:mm"; end before start = next day),
  * with `breakMinutes` of recorded breaks. Mirrors PayCalculator for the "actual" / "scheduled" sources.
@@ -78,7 +92,7 @@ export function estimatePay(rules: PayRulesJson, basis: WageBasis, rate: number,
   if (minutes > 0 && minutes < rules.min_paid_minutes) minutes = rules.min_paid_minutes;
   const paid = roundMinutes(minutes, rules.rounding.minutes, rules.rounding.mode);
   const ot = rules.overtime && rules.overtime.after_hours > 0 && rules.overtime.multiplier > 1
-    ? Math.max(0, paid - Math.round(rules.overtime.after_hours * 60)) : 0;
+    ? overtimeMinutes(paid, window, Math.round(rules.overtime.after_hours * 60)) : 0;
   const nightMin = rules.night && rules.night.multiplier > 1 && window > 0
     ? Math.min(paid, Math.round(nightOverlap(s, e, rules.night) * paid / window)) : 0;
   const base = Math.round((rate * paid) / 60);

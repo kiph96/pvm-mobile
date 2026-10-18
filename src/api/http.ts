@@ -13,6 +13,8 @@ export type RefreshHandler = () => Promise<string | null>;
 export interface UserView { id: string; displayName: string; status: string }
 export interface AuthTokens {
   tokenType: 'Bearer'; accessToken: string; expiresIn: number; refreshToken: string; user: UserView; newUser: boolean;
+  /** first name from Google/Facebook on a provider sign-in */
+  givenName?: string | null;
 }
 export interface AuthProviders { google: boolean; facebook: boolean; dev: boolean }
 
@@ -61,7 +63,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST' | 'PUT';
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorized?: RefreshHandler) {
   const root = baseUrl.replace(/\/+$/, '');
@@ -120,10 +122,17 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     createOrganization: (name: string, billingTimezone: string) =>
       call<T.OrganizationView>('POST', '/organizations', { name, billingTimezone }),
     organization: () => call<T.OrganizationView>('GET', '/organization'),
+    updateOrganization: (req: T.UpdateOrganization) => call<T.OrganizationView>('PUT', '/organization', req),
+    uploadLogo: (req: T.UploadLogo) => call<T.OrganizationView>('PUT', '/organization/logo', req),
+    removeLogo: () => call<T.OrganizationView>('DELETE', '/organization/logo'),
+    /** Image URL of a Business logo (public; the version makes it cache-safe), or null when there is none. */
+    logoUrl: (organizationId: string, version?: number | null): string | null =>
+      version ? `${root}/api/public/organizations/${organizationId}/logo?v=${version}` : null,
     stores: () => call<T.StoreView[]>('GET', '/stores'),
     /** Stores of any business I belong to, not only the one I am working in. */
     storesOf: (organizationId: string) => call<T.StoreView[]>('GET', '/stores', undefined, { 'X-Organization-Id': organizationId }),
     createStore: (req: T.CreateStore) => call<T.StoreCreated>('POST', '/stores', req),
+    updateStore: (storeId: string, req: T.UpdateStore) => call<T.StoreView>('PUT', `/stores/${storeId}`, req),
     rotateAccessKey: (storeId: string) => call<T.AccessKeyView>('POST', `/stores/${storeId}/access-key/rotate`),
     policy: (storeId: string) => call<T.PolicyView>('GET', `/stores/${storeId}/policy`),
     updatePolicy: (storeId: string, req: T.UpdatePolicy) => call<T.PolicyView>('PUT', `/stores/${storeId}/policy`, req),
@@ -198,6 +207,10 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     myPayslips: () => call<T.Payslip[]>('GET', '/me/payslips'),
     estimate: () => call<T.Estimate>('GET', '/billing/estimate'),
     plan: () => call<T.PlanView>('GET', '/billing/plan'),
+    // sales during a shift
+    shiftSales: (shiftId: string) => call<T.ShiftSales>('GET', `/shifts/${shiftId}/sales`),
+    recordSale: (shiftId: string, req: T.RecordSale) => call<T.ShiftSales>('POST', `/shifts/${shiftId}/sales`, req),
+    voidSale: (saleId: string, reason?: string) => call<T.ShiftSales>('POST', `/sales/${saleId}/void`, { reason: reason ?? null }),
     syncPlan: () => call<T.PlanView>('POST', '/billing/plan/sync'),
     devPurchase: (storeQuota: number) => call<T.PlanView>('POST', '/billing/plan/dev-purchase', { storeQuota }),
     invoices: () => call<T.InvoiceView[]>('GET', '/billing/invoices'),

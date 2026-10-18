@@ -84,7 +84,7 @@ function SettingsCard({ settings }: { settings: DigestSettings }) {
             </View>
             <View style={{ gap: 8 }}>
               <Txt variant="small" muted>{t('digest.language')}</Txt>
-              <Row gap={8}>
+              <Row gap={8} wrap>
                 <Chip label="🇻🇳 Tiếng Việt" selected={language === 'vi'} onPress={() => setLanguage('vi')} />
                 <Chip label="🇬🇧 English" selected={language === 'en'} onPress={() => setLanguage('en')} />
               </Row>

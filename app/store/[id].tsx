@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import type { AccessKeyView, PolicyRules, PolicyView } from '@/api/types';
+import type { AccessKeyView, PolicyRules, PolicyView, StoreView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
 import { codeLabel, useStores } from '@/components/domain';
 import { PayRulesEditor } from '@/components/payRules';
@@ -12,7 +13,8 @@ import { Badge, Button, Card, Chip, Field, IconBubble, ListItem, Loading, Row, S
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
-import { isoWeekdays, money } from '@/utils/format';
+import { useTheme } from '@/theme';
+import { isoWeekdays, money, pct } from '@/utils/format';
 
 export default function StoreSettings() {
   const { id, invite } = useLocalSearchParams<{ id: string; invite?: string }>();
@@ -24,6 +26,8 @@ export default function StoreSettings() {
   const store = stores.find((s) => s.id === id);
   const [key, setKey] = useState<AccessKeyView | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const { colors } = useTheme();
   const policy = useQuery({ queryKey: ['policy', org, id], queryFn: () => api.policy(id) });
   const templates = useQuery({ queryKey: ['templates', org, id], queryFn: () => api.templates(id) });
   const days = isoWeekdays();
@@ -39,7 +43,25 @@ export default function StoreSettings() {
     <Screen onRefresh={() => { policy.refetch(); templates.refetch(); }} refreshing={false}>
       <Stack.Screen options={{ title: store?.name ?? t('screens.store') }} />
 
-      <Section title={t('storeSettings.invite')} style={{ marginTop: 12 }}>
+      {store ? (
+        <Section title={t('storeInfo.title')} action={t('common.edit')} onAction={() => setEditOpen(true)} style={{ marginTop: 12 }}>
+          <Card style={{ gap: 10 }} onPress={() => setEditOpen(true)}>
+            <Row>
+              <IconBubble icon="storefront" tone="accent" />
+              <View style={{ flex: 1 }}>
+                <Txt variant="subheading">{store.name}</Txt>
+                <Txt variant="small" muted>{store.timezone} · {store.currency}</Txt>
+              </View>
+            </Row>
+            <Row gap={8} style={{ alignItems: 'flex-start' }}>
+              <Ionicons name="location-outline" size={18} color={store.address ? colors.text : colors.textMuted} />
+              <Txt variant="small" muted={!store.address} style={{ flex: 1 }}>{store.address ?? t('storeInfo.noAddress')}</Txt>
+            </Row>
+          </Card>
+        </Section>
+      ) : null}
+
+      <Section title={t('storeSettings.invite')}>
         {key ? <AccessKeyCard accessKey={key} /> : (
           <Card style={{ gap: 12 }}>
             <Row>
@@ -65,6 +87,7 @@ export default function StoreSettings() {
 
       {policy.data ? <PayRulesEditor storeId={id} policy={policy.data} /> : null}
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
+      {store ? <EditStoreSheet visible={editOpen} onClose={() => setEditOpen(false)} store={store} /> : null}
       <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id}
         autoDays={autoSchedule(policy.data).on ? autoSchedule(policy.data).days : null} />
     </Screen>
@@ -87,6 +110,10 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
   const dirty = JSON.stringify(p) !== JSON.stringify(policy);
   const rules = p.rules ?? {};
   const auto = autoSchedule(p);
+  const cutoffOn = p.rules?.registration?.cutoff_enabled !== false;
+  const sales = { enabled: !!p.rules?.sales?.enabled, percent: p.rules?.sales?.commission_percent ?? 2 };
+  const setSales = (rule: NonNullable<PolicyRules['sales']>) => setP((x) => ({ ...x, rules: { ...(x.rules ?? {}), sales: rule } }));
+  const cutoffMinutes = p.rules?.registration?.closes_minutes_before ?? 15;
   const setSchedule = (patch: NonNullable<PolicyRules['schedule']>) =>
     setP((x) => ({ ...x, rules: { ...(x.rules ?? {}), schedule: { ...(x.rules?.schedule ?? {}), ...patch } } }));
   return (
@@ -115,7 +142,30 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
         ) : null}
       </Card>
       <Card style={{ gap: 16 }}>
+        <Txt variant="subheading">{t('sales.settingsTitle')}</Txt>
+        <Toggle label={t('sales.enable')} hint={t('sales.enableHint')} value={sales.enabled}
+          onChange={(v) => setSales({ enabled: v, commission_percent: sales.percent })} />
+        {sales.enabled ? (
+          <>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <Txt>{t('sales.rate')}</Txt>
+              <Row gap={10}>
+                <Button small variant="secondary" title="−" disabled={sales.percent <= 2}
+                  onPress={() => setSales({ enabled: true, commission_percent: Math.max(2, sales.percent - 0.5) })} />
+                <Txt variant="subheading" style={{ minWidth: 52, textAlign: 'center' }}>{pct(sales.percent)}%</Txt>
+                <Button small variant="secondary" title="+" disabled={sales.percent >= 10}
+                  onPress={() => setSales({ enabled: true, commission_percent: Math.min(10, sales.percent + 0.5) })} />
+              </Row>
+            </Row>
+            <Txt variant="small" muted>{t('sales.example', { amount: money(1_000_000), commission: money(10_000 * sales.percent) })}</Txt>
+          </>
+        ) : null}
+      </Card>
+      <Card style={{ gap: 16 }}>
         <Txt variant="subheading">{t('storeSettings.signups')}</Txt>
+        <Toggle label={t('storeSettings.cutoff', { n: cutoffMinutes })} hint={cutoffOn ? t('storeSettings.cutoffOnHint', { n: cutoffMinutes }) : t('storeSettings.cutoffOffHint')}
+          value={cutoffOn} onChange={(v) => setP((x) => ({ ...x, rules: { ...(x.rules ?? {}),
+            registration: { ...(x.rules?.registration ?? {}), cutoff_enabled: v, closes_minutes_before: x.rules?.registration?.closes_minutes_before ?? 15 } } }))} />
         <Toggle label={t('storeSettings.autoApprove')} hint={t('storeSettings.autoApproveHint')} value={p.registrationMode === 'automatic'}
           onChange={(v) => set('registrationMode', v ? 'automatic' : 'owner_approval')} />
         <Toggle label={t('storeSettings.swapApproval')} value={p.swapApprovalRequired} onChange={(v) => set('swapApprovalRequired', v)} />
@@ -159,7 +209,7 @@ function TemplateSheet({ visible, onClose, storeId, autoDays }: { visible: boole
   const toggle = (d: number) => setDays((x) => (x.includes(d) ? x.filter((y) => y !== d) : [...x, d].sort()));
   return (
     <Sheet visible={visible} onClose={onClose} title={t('storeSettings.newTemplate')}>
-      <Field label={t('storeSettings.templateName')} value={name} onChangeText={setName} placeholder="Ca sáng" />
+      <Field label={t('storeSettings.templateName')} value={name} onChangeText={setName} placeholder={t('storeSettings.templatePlaceholder')} />
       <Row gap={10}>
         <View style={{ flex: 1 }}><Field label={t('common.starts')} value={start} onChangeText={setStart} /></View>
         <View style={{ flex: 1 }}><Field label={t('common.ends')} value={end} onChangeText={setEnd} hint={end <= start ? t('common.endsNextDay') : undefined} /></View>
@@ -174,6 +224,35 @@ function TemplateSheet({ visible, onClose, storeId, autoDays }: { visible: boole
             setName('');
             onClose();
           }
+        }} />
+    </Sheet>
+  );
+}
+
+/** Owner edits the store's name and address. Timezone and currency stay fixed: shifts and pay depend on them. */
+function EditStoreSheet({ visible, onClose, store }: { visible: boolean; onClose: () => void; store: StoreView }) {
+  const api = useApi();
+  const { t } = useI18n();
+  const [run, busy] = useAction();
+  const [name, setName] = useState(store.name);
+  const [address, setAddress] = useState(store.address ?? '');
+  useEffect(() => {
+    if (visible) {
+      setName(store.name);
+      setAddress(store.address ?? '');
+    }
+  }, [visible, store]);
+  const changed = name.trim() !== store.name || (address.trim() || null) !== (store.address ?? null);
+  return (
+    <Sheet visible={visible} onClose={onClose} title={t('storeInfo.editTitle')}>
+      <Field label={t('stores.name')} value={name} onChangeText={setName} maxLength={200} />
+      <Field label={t('storeInfo.address')} value={address} onChangeText={setAddress} maxLength={300} multiline
+        placeholder={t('storeInfo.addressPlaceholder')} hint={t('storeInfo.addressHint')} />
+      <Txt variant="small" muted>{t('storeInfo.fixed', { tz: store.timezone, currency: store.currency })}</Txt>
+      <Button title={t('common.save')} icon="checkmark" full loading={busy === 'save'} disabled={!name.trim() || !changed}
+        onPress={async () => {
+          const r = await run('save', () => api.updateStore(store.id, { name: name.trim(), address: address.trim() || null }), t('storeInfo.saved'));
+          if (r) onClose();
         }} />
     </Sheet>
   );

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import { StatusBadge, codeLabel, shortStore, useStores } from '@/components/domain';
+import { StatusBadge, codeLabel, useStores } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Button, Card, Empty, Loading, Row, Screen, Segmented, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
@@ -42,7 +42,7 @@ export default function Violations() {
               <View style={{ flex: 1 }}>
                 <Txt variant="subheading">{nameOf(v.employmentId) ?? codeLabel(v.code)}</Txt>
                 <Txt variant="small" muted>
-                  {[codeLabel(v.code), v.points ? t('violations.pts', { n: v.points }) : null, shortStore(stores.find((s) => s.id === v.storeId)?.name ?? ''), ago(v.occurredAt)]
+                  {[codeLabel(v.code), v.points ? t('violations.pts', { n: v.points }) : null, (stores.find((s) => s.id === v.storeId)?.name ?? ''), ago(v.occurredAt)]
                     .filter(Boolean).join(' · ')}
                 </Txt>
               </View>
