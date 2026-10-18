@@ -183,6 +183,9 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     attendance: (assignmentId: string) => call<T.AttendanceView[]>('GET', `/assignments/${assignmentId}/attendance`),
     approveTimesheet: (assignmentId: string) =>
       call<unknown>('POST', `/assignments/${assignmentId}/timesheet`, {}),
+    /** Owner: someone did not come (not paid), or did after all (paid the scheduled shift). */
+    markAttendance: (assignmentId: string, outcome: 'worked' | 'no_show', reason: string) =>
+      call<unknown>('POST', `/assignments/${assignmentId}/timesheet`, { outcome, reason }),
     reportViolation: (req: T.CreateViolation) => call<T.ViolationView>('POST', '/violations', req),
     violations: (params: { storeId?: string; status?: string; employmentId?: string } = {}) =>
       call<T.ViolationView[]>('GET', '/violations' + q(params)),

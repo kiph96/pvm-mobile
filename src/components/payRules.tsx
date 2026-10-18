@@ -10,6 +10,9 @@ import { DEFAULT_PAY, estimatePay, hoursText, payRulesOf, wageText, type PayRule
 import { useAction } from './toast';
 import { Badge, Button, Card, Chip, Row, Section, Segmented, Toggle, Txt } from './ui';
 
+/** Mirrors PayRules.HOUR_OPTIONS_ENABLED on the server: off = these controls are hidden and defaults apply. */
+const HOUR_OPTIONS = false;
+
 const EXAMPLES: [string, string][] = [['08:00', '12:00'], ['14:00', '23:00'], ['18:00', '02:00']];
 const EXAMPLE_RATE = 30000;
 
@@ -51,60 +54,66 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
           <Txt variant="small" muted>{t('pay.basisHint')}</Txt>
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Txt variant="subheading">{t('pay.source')}</Txt>
-          {([['actual', 'sourceActual'], ['actual_capped', 'sourceCapped'], ['scheduled', 'sourceScheduled']] as const).map(([v, key]) => (
-            <Chip key={v} label={`${t(`pay.${key}`)} — ${t(`pay.${key}Hint`)}`} selected={pay.hours_source === v} onPress={() => set('hours_source', v)} />
-          ))}
-        </View>
+        {/* hour options (paid hours, rounding, breaks, minimum) and the example are switched off for now:
+            payroll uses the defaults (the server ignores the stored values too) */}
+        {HOUR_OPTIONS ? (
+          <>
+            <View style={{ gap: 8 }}>
+              <Txt variant="subheading">{t('pay.source')}</Txt>
+              {([['actual', 'sourceActual'], ['actual_capped', 'sourceCapped'], ['scheduled', 'sourceScheduled']] as const).map(([v, key]) => (
+                <Chip key={v} label={`${t(`pay.${key}`)} — ${t(`pay.${key}Hint`)}`} selected={pay.hours_source === v} onPress={() => set('hours_source', v)} />
+              ))}
+            </View>
 
-        <View style={{ gap: 8 }}>
-          <Txt variant="subheading">{t('pay.rounding')}</Txt>
-          <Row gap={8} wrap>
-            {[0, 5, 15, 30].map((m) => (
-              <Chip key={m} label={m === 0 ? t('pay.roundingNone') : `${m}′`} selected={pay.rounding.minutes === m}
-                onPress={() => set('rounding', { ...pay.rounding, minutes: m })} />
-            ))}
-          </Row>
-          {pay.rounding.minutes > 0 ? (
-            <Segmented value={pay.rounding.mode} onChange={(mode) => set('rounding', { ...pay.rounding, mode })}
-              options={[{ value: 'nearest', label: t('pay.roundNearest') }, { value: 'down', label: t('pay.roundDown') }, { value: 'up', label: t('pay.roundUp') }]} />
-          ) : null}
-        </View>
+            <View style={{ gap: 8 }}>
+              <Txt variant="subheading">{t('pay.rounding')}</Txt>
+              <Row gap={8} wrap>
+                {[0, 5, 15, 30].map((m) => (
+                  <Chip key={m} label={m === 0 ? t('pay.roundingNone') : `${m}′`} selected={pay.rounding.minutes === m}
+                    onPress={() => set('rounding', { ...pay.rounding, minutes: m })} />
+                ))}
+              </Row>
+              {pay.rounding.minutes > 0 ? (
+                <Segmented value={pay.rounding.mode} onChange={(mode) => set('rounding', { ...pay.rounding, mode })}
+                  options={[{ value: 'nearest', label: t('pay.roundNearest') }, { value: 'down', label: t('pay.roundDown') }, { value: 'up', label: t('pay.roundUp') }]} />
+              ) : null}
+            </View>
 
-        <Toggle label={t('pay.breaks')} hint={t('pay.breaksHint')} value={pay.unpaid_breaks} onChange={(v) => set('unpaid_breaks', v)} />
+            <Toggle label={t('pay.breaks')} hint={t('pay.breaksHint')} value={pay.unpaid_breaks} onChange={(v) => set('unpaid_breaks', v)} />
 
-        <View style={{ gap: 8 }}>
-          <Txt variant="subheading">{t('pay.minimum')}</Txt>
-          <Row gap={8} wrap>
-            {[0, 60, 120, 180, 240].map((m) => (
-              <Chip key={m} label={m === 0 ? t('pay.none') : hoursText(m)} selected={pay.min_paid_minutes === m} onPress={() => set('min_paid_minutes', m)} />
-            ))}
-          </Row>
-          <Txt variant="small" muted>{t('pay.minimumHint')}</Txt>
-        </View>
+            <View style={{ gap: 8 }}>
+              <Txt variant="subheading">{t('pay.minimum')}</Txt>
+              <Row gap={8} wrap>
+                {[0, 60, 120, 180, 240].map((m) => (
+                  <Chip key={m} label={m === 0 ? t('pay.none') : hoursText(m)} selected={pay.min_paid_minutes === m} onPress={() => set('min_paid_minutes', m)} />
+                ))}
+              </Row>
+              <Txt variant="small" muted>{t('pay.minimumHint')}</Txt>
+            </View>
 
-        {/* overtime and night pay live under Advanced; the example still includes them when on */}
-        {/* live example so the owner sees what the settings mean */}
-        <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 14, padding: 14, gap: 8 }}>
-          <Txt variant="subheading">{t('pay.example')}</Txt>
-          {/* own line + wrap: three time chips don't fit beside the title on a phone */}
-          <Row gap={6} wrap>
-            {EXAMPLES.map(([a, b], i) => <Chip key={a} label={`${a}–${b}`} selected={example === i} onPress={() => setExample(i)} />)}
-          </Row>
-          {pay.basis === 'per_shift' ? (
-            <Txt variant="small">{wageText(180000, 'per_shift')}</Txt>
-          ) : (
-            <>
-              <Txt variant="small" muted>{t('pay.exampleLine', { start: exStart, end: exEnd, rate: wageText(EXAMPLE_RATE, 'hourly') })}</Txt>
-              <ExampleLine label={t('pay.exBase', { hours: hoursText(est.paidMinutes) })} amount={est.base} />
-              {est.overtime ? <ExampleLine label={t('pay.exOvertime', { hours: hoursText(est.overtimeMinutes), pct: pct(pay.overtime!.multiplier) })} amount={est.overtime} /> : null}
-              {est.night ? <ExampleLine label={t('pay.exNight', { hours: hoursText(est.nightMinutes), pct: pct(pay.night!.multiplier) })} amount={est.night} /> : null}
-              <View style={{ height: 1, backgroundColor: colors.border }} />
-              <ExampleLine label={t('pay.exTotal')} amount={est.total} strong />
-            </>
-          )}
-        </View>
+            {/* overtime and night pay live under Advanced; the example still includes them when on */}
+            {/* live example so the owner sees what the settings mean */}
+            <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 14, padding: 14, gap: 8 }}>
+              <Txt variant="subheading">{t('pay.example')}</Txt>
+              {/* own line + wrap: three time chips don't fit beside the title on a phone */}
+              <Row gap={6} wrap>
+                {EXAMPLES.map(([a, b], i) => <Chip key={a} label={`${a}–${b}`} selected={example === i} onPress={() => setExample(i)} />)}
+              </Row>
+              {pay.basis === 'per_shift' ? (
+                <Txt variant="small">{wageText(180000, 'per_shift')}</Txt>
+              ) : (
+                <>
+                  <Txt variant="small" muted>{t('pay.exampleLine', { start: exStart, end: exEnd, rate: wageText(EXAMPLE_RATE, 'hourly') })}</Txt>
+                  <ExampleLine label={t('pay.exBase', { hours: hoursText(est.paidMinutes) })} amount={est.base} />
+                  {est.overtime ? <ExampleLine label={t('pay.exOvertime', { hours: hoursText(est.overtimeMinutes), pct: pct(pay.overtime!.multiplier) })} amount={est.overtime} /> : null}
+                  {est.night ? <ExampleLine label={t('pay.exNight', { hours: hoursText(est.nightMinutes), pct: pct(pay.night!.multiplier) })} amount={est.night} /> : null}
+                  <View style={{ height: 1, backgroundColor: colors.border }} />
+                  <ExampleLine label={t('pay.exTotal')} amount={est.total} strong />
+                </>
+              )}
+            </View>
+          </>
+        ) : null}
 
         {dirty ? <Button title={t('pay.save')} icon="checkmark" loading={busy === 'pay'} onPress={save} full />
           : <Badge tone="success" icon="checkmark-circle" label={t('storeSettings.version', { n: policy.version })} />}

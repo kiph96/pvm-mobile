@@ -102,6 +102,21 @@ export default function ShiftScreen() {
                     const r = await run(`sw${a.id}`, () => api.proposeSwap(swapFrom, a.id), t('shift.swapOffered', { name: a.displayName }));
                     if (r) router.back();
                   }} />
+              ) : isManager && !upcoming && shift.status !== 'cancelled' && ['assigned', 'completed', 'no_show'].includes(a.state) ? (
+                a.state === 'no_show' ? (
+                  <Row gap={6}>
+                    <StatusBadge status={a.state} />
+                    <Button small variant="ghost" title={t('shift.present')} loading={busy === `at${a.id}`}
+                      onPress={() => run(`at${a.id}`, () => api.markAttendance(a.id, 'worked', t('shift.presentReason')), t('shift.markedPresent', { name: a.displayName }))} />
+                  </Row>
+                ) : (
+                  <Button small variant="ghost" title={t('shift.absent')} loading={busy === `at${a.id}`}
+                    onPress={async () => {
+                      if (await confirm(t('shift.absentTitle', { name: a.displayName }), t('shift.absentMsg'), t('shift.absent'), true)) {
+                        run(`at${a.id}`, () => api.markAttendance(a.id, 'no_show', t('shift.absentReason')), t('shift.markedAbsent', { name: a.displayName }));
+                      }
+                    }} />
+                )
               ) : isManager && a.state === 'assigned' && upcoming ? (
                 <Button small variant="ghost" title={t('common.remove')} loading={busy === `rm${a.id}`}
                   onPress={async () => {

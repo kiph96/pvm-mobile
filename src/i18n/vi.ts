@@ -198,7 +198,7 @@ export const vi: Dict = {
     staffing: '{assigned}/{max} đã xếp · tối thiểu {min} · lý tưởng {opt}',
   },
   shift: {
-    publish: 'Công bố', publishedToast: 'Đã công bố — nhân viên có thể đăng ký', assign: 'Xếp người', staffing: 'Số người',
+    absent: 'Vắng mặt', present: 'Có mặt', absentTitle: '{name} vắng mặt?', absentMsg: 'Ca này sẽ không được tính lương cho người này.', absentReason: 'Chủ cửa hàng báo vắng mặt', presentReason: 'Chủ cửa hàng xác nhận có mặt', markedAbsent: 'Đã ghi {name} vắng mặt', markedPresent: 'Đã ghi {name} có mặt', publish: 'Công bố', publishedToast: 'Đã công bố — nhân viên có thể đăng ký', assign: 'Xếp người', staffing: 'Số người',
     cancelShift: 'Huỷ ca', cancelTitle: 'Huỷ ca này?', cancelMsg: 'Mọi người đã được xếp sẽ nhận thông báo.', cancelled: 'Đã huỷ ca',
     want: 'Tôi muốn nhận ca này', waitlist: 'Vào danh sách chờ', booked: 'Bạn đã có ca! 🎉', onWaitlist: 'Bạn đang trong danh sách chờ',
     requestSent: 'Đã gửi yêu cầu tới quản lý', youWork: 'Bạn làm ca này', waitingApproval: 'Đang chờ duyệt',
@@ -345,7 +345,7 @@ export const vi: Dict = {
   },
   notifications: { empty: 'Bạn đã xem hết thông báo' },
   staff: {
-    hello: 'Chào {name} 👋', waitingTitle: 'Đang chờ duyệt',
+    noClockNeeded: 'Không cần chấm công — lương tính theo giờ của ca.', hello: 'Chào {name} 👋', waitingTitle: 'Đang chờ duyệt',
     waitingMsg: 'Quản lý chưa duyệt bạn vào cửa hàng. Chúng tôi sẽ báo ngay khi được duyệt.',
     noUpcoming: 'Chưa có ca sắp tới', pickUp: 'Nhận thêm giờ làm — đang có ca trống chờ bạn.', upcoming: 'Ca sắp tới',
     waitingAnswer: 'Đang chờ phản hồi', requestAt: 'Xin ca tại {store}', sent: 'gửi {when}', comingUp: 'Sắp tới',

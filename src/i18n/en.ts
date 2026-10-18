@@ -197,7 +197,7 @@ export const en = {
     staffing: '{assigned}/{max} booked · min {min} · ideal {opt}',
   },
   shift: {
-    publish: 'Publish', publishedToast: 'Published — your team can sign up', assign: 'Assign someone', staffing: 'Staffing',
+    absent: 'Absent', present: 'Present', absentTitle: 'Mark {name} absent?', absentMsg: 'This shift will not be paid for them.', absentReason: 'Marked absent by the owner', presentReason: 'Confirmed present by the owner', markedAbsent: '{name} marked absent', markedPresent: '{name} marked present', publish: 'Publish', publishedToast: 'Published — your team can sign up', assign: 'Assign someone', staffing: 'Staffing',
     cancelShift: 'Cancel shift', cancelTitle: 'Cancel this shift?', cancelMsg: 'Everyone booked will be notified.', cancelled: 'Shift cancelled',
     want: 'I want this shift', waitlist: 'Join the waitlist', booked: "You're booked! 🎉", onWaitlist: "You're on the waitlist",
     requestSent: 'Request sent to your manager', youWork: "You're working this shift", waitingApproval: 'Waiting for approval',
@@ -344,7 +344,7 @@ export const en = {
   },
   notifications: { empty: "You're all caught up" },
   staff: {
-    hello: 'Hi, {name} 👋', waitingTitle: 'Waiting for approval',
+    noClockNeeded: 'No clock-in needed — pay follows the shift hours.', hello: 'Hi, {name} 👋', waitingTitle: 'Waiting for approval',
     waitingMsg: "Your manager hasn't approved you for a store yet. We'll notify you as soon as they do.",
     noUpcoming: 'No upcoming shifts', pickUp: 'Pick up some hours — there are open shifts waiting.', upcoming: 'Upcoming shifts',
     waitingAnswer: 'Waiting for an answer', requestAt: 'Shift request at {store}', sent: 'sent {when}', comingUp: 'Coming up',

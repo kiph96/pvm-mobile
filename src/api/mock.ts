@@ -758,6 +758,12 @@ export function createMockApi(actor: () => Actor): Api {
       if (a.state === 'assigned') a.state = 'completed';
       return {};
     }),
+    markAttendance: (assignmentId, outcome) => wait(() => {
+      manager();
+      const a = db.assignments.find((x) => x.id === assignmentId) ?? fail(404, t('mock.notFound'));
+      a.state = outcome === 'no_show' ? 'no_show' : 'completed';
+      return {};
+    }),
     reportViolation: (req) => wait(() => {
       manager();
       const e = emp(req.employmentId);

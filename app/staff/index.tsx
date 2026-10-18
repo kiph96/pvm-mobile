@@ -17,6 +17,8 @@ import { useTheme } from '@/theme';
 import { dateTime, localDateOf, relativeDay, time, timeRange } from '@/utils/format';
 
 const EARLY_MINUTES = 30;
+/** Staff do not clock in or out: pay follows the scheduled shift. Kept switchable. */
+const CLOCK_IN = false;
 
 export default function StaffHome() {
   const api = useApi();
@@ -107,7 +109,7 @@ function NextShift({ a, storeName }: { a: AssignmentView; storeName: string }) {
   const { t } = useI18n();
   const { colors } = useTheme();
   const [run, busy] = useAction();
-  const events = useQuery({ queryKey: ['attendance', org, a.id], queryFn: () => api.attendance(a.id) });
+  const events = useQuery({ queryKey: ['attendance', org, a.id], queryFn: () => api.attendance(a.id), enabled: CLOCK_IN });
   const last = events.data?.at(-1)?.type;
   const opensAt = Date.parse(a.startsAt) - EARLY_MINUTES * 60_000;
   const canClock = Date.now() >= opensAt;
@@ -126,7 +128,11 @@ function NextShift({ a, storeName }: { a: AssignmentView; storeName: string }) {
         <Txt variant="title" color="#fff">{relativeDay(localDateOf(a.startsAt))}</Txt>
         <Txt variant="heading" color="#fff">{timeRange(a.startsAt, a.endsAt)}</Txt>
       </View>
-      {events.isLoading ? null : !last || last === 'clock_out' ? (
+      {!CLOCK_IN ? (
+        <Row gap={8}>
+          <Txt variant="small" color="rgba(255,255,255,0.9)" style={{ flex: 1 }}>{t('staff.noClockNeeded')}</Txt>
+        </Row>
+      ) : events.isLoading ? null : !last || last === 'clock_out' ? (
         canClock ? (
           <Button title={t('staff.clockIn')} icon="finger-print" variant="accent" full loading={busy === 'clock_in'} onPress={() => clock('clock_in', t('staff.clockedIn'))} />
         ) : (
