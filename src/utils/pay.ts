@@ -18,8 +18,12 @@ export interface PayRulesJson {
 /** Defaults for new stores (same as the backend PayRules.DEFAULTS). */
 export const DEFAULT_PAY: PayRulesJson = {
   basis: 'hourly', hours_source: 'actual', rounding: { minutes: 0, mode: 'nearest' }, unpaid_breaks: true,
-  min_paid_minutes: 0, overtime: { after_hours: 8, multiplier: 1.5 }, night: { start: '22:00', end: '06:00', multiplier: 1.3 },
+  min_paid_minutes: 0, overtime: null, night: null,
 };
+
+/** Values a store starts from when the owner turns overtime / night pay on (both are off for a new store). */
+export const OVERTIME_DEFAULT: NonNullable<PayRulesJson['overtime']> = { after_hours: 8, multiplier: 1.5 };
+export const NIGHT_DEFAULT: NonNullable<PayRulesJson['night']> = { start: '22:00', end: '06:00', multiplier: 1.3 };
 
 /** Stores created before pay rules existed. */
 export const LEGACY_PAY: PayRulesJson = {

@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import type { AccessKeyView, PolicyRules, PolicyView, StoreView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
+import { AdvancedSettings } from '@/components/advancedSettings';
 import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessIcon, businessName, type BusinessType } from '@/components/businessType';
 import { codeLabel, useStores } from '@/components/domain';
 import { PayRulesEditor } from '@/components/payRules';
@@ -15,7 +16,7 @@ import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
 import { useTheme } from '@/theme';
-import { isoWeekdays, money, pct } from '@/utils/format';
+import { isoWeekdays, money } from '@/utils/format';
 
 export default function StoreSettings() {
   const { id, invite } = useLocalSearchParams<{ id: string; invite?: string }>();
@@ -96,6 +97,7 @@ export default function StoreSettings() {
 
       {policy.data ? <PayRulesEditor storeId={id} policy={policy.data} /> : null}
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
+      {policy.data ? <AdvancedSettings storeId={id} policy={policy.data} /> : null}
       {store ? <EditStoreSheet visible={editOpen} onClose={() => setEditOpen(false)} store={store} /> : null}
       {store ? <ChangeTypeSheet visible={typeOpen} onClose={() => setTypeOpen(false)} store={store} current={ws?.businessType} /> : null}
       <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id}
@@ -135,8 +137,6 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
   const rules = p.rules ?? {};
   const auto = autoSchedule(p);
   const cutoffOn = p.rules?.registration?.cutoff_enabled !== false;
-  const sales = { enabled: !!p.rules?.sales?.enabled, percent: p.rules?.sales?.commission_percent ?? 2 };
-  const setSales = (rule: NonNullable<PolicyRules['sales']>) => setP((x) => ({ ...x, rules: { ...(x.rules ?? {}), sales: rule } }));
   const cutoffMinutes = p.rules?.registration?.closes_minutes_before ?? 15;
   const setSchedule = (patch: NonNullable<PolicyRules['schedule']>) =>
     setP((x) => ({ ...x, rules: { ...(x.rules ?? {}), schedule: { ...(x.rules?.schedule ?? {}), ...patch } } }));
@@ -163,26 +163,6 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
           onChange={(v) => setSchedule({ auto_generate: v })} />
         {auto.on ? (
           <Stepper label={t('storeSettings.daysAhead')} value={auto.days} min={7} max={28} onChange={(v) => setSchedule({ days_ahead: v })} />
-        ) : null}
-      </Card>
-      <Card style={{ gap: 16 }}>
-        <Txt variant="subheading">{t('sales.settingsTitle')}</Txt>
-        <Toggle label={t('sales.enable')} hint={t('sales.enableHint')} value={sales.enabled}
-          onChange={(v) => setSales({ enabled: v, commission_percent: sales.percent })} />
-        {sales.enabled ? (
-          <>
-            <Row style={{ justifyContent: 'space-between' }}>
-              <Txt>{t('sales.rate')}</Txt>
-              <Row gap={10}>
-                <Button small variant="secondary" title="−" disabled={sales.percent <= 2}
-                  onPress={() => setSales({ enabled: true, commission_percent: Math.max(2, sales.percent - 0.5) })} />
-                <Txt variant="subheading" style={{ minWidth: 52, textAlign: 'center' }}>{pct(sales.percent)}%</Txt>
-                <Button small variant="secondary" title="+" disabled={sales.percent >= 10}
-                  onPress={() => setSales({ enabled: true, commission_percent: Math.min(10, sales.percent + 0.5) })} />
-              </Row>
-            </Row>
-            <Txt variant="small" muted>{t('sales.example', { amount: money(1_000_000), commission: money(10_000 * sales.percent) })}</Txt>
-          </>
         ) : null}
       </Card>
       <Card style={{ gap: 16 }}>

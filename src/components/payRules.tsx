@@ -8,12 +8,10 @@ import { useTheme } from '@/theme';
 import { money } from '@/utils/format';
 import { DEFAULT_PAY, estimatePay, hoursText, payRulesOf, wageText, type PayRulesJson } from '@/utils/pay';
 import { useAction } from './toast';
-import { Badge, Button, Card, Chip, Row, Section, Segmented, Stepper, Toggle, Txt } from './ui';
+import { Badge, Button, Card, Chip, Row, Section, Segmented, Toggle, Txt } from './ui';
 
 const EXAMPLES: [string, string][] = [['08:00', '12:00'], ['14:00', '23:00'], ['18:00', '02:00']];
 const EXAMPLE_RATE = 30000;
-const NIGHT_STARTS = ['21:00', '22:00', '23:00'];
-const NIGHT_ENDS = ['05:00', '06:00', '07:00'];
 
 /** Owner editor for rules.pay of a store policy (saved as a new policy version). */
 export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: PolicyView }) {
@@ -86,44 +84,7 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
           <Txt variant="small" muted>{t('pay.minimumHint')}</Txt>
         </View>
 
-        <View style={{ gap: 10 }}>
-          <Toggle label={t('pay.overtime')} hint={t('pay.overtimeHint')} value={!!pay.overtime}
-            onChange={(on) => set('overtime', on ? DEFAULT_PAY.overtime : null)} />
-          {pay.overtime ? (
-            <>
-              <Stepper label={`${t('pay.overtimeAfter')} (${hoursText(Math.round(pay.overtime.after_hours * 60))})`} value={pay.overtime.after_hours}
-                min={1} max={16} onChange={(h) => set('overtime', { ...pay.overtime!, after_hours: h })} />
-              <Row gap={8} wrap>
-                <Txt variant="small" muted>{t('pay.multiplier')}</Txt>
-                {[1.5, 2, 3].map((m) => <Chip key={m} label={`${Math.round(m * 100)}%`} selected={pay.overtime!.multiplier === m}
-                  onPress={() => set('overtime', { ...pay.overtime!, multiplier: m })} />)}
-              </Row>
-            </>
-          ) : null}
-        </View>
-
-        <View style={{ gap: 10 }}>
-          <Toggle label={t('pay.night')} hint={t('pay.nightHint')} value={!!pay.night}
-            onChange={(on) => set('night', on ? DEFAULT_PAY.night : null)} />
-          {pay.night ? (
-            <>
-              <Row gap={8} wrap>
-                <Txt variant="small" muted>{t('pay.nightFrom')}</Txt>
-                {NIGHT_STARTS.map((h) => <Chip key={h} label={h} selected={pay.night!.start === h} onPress={() => set('night', { ...pay.night!, start: h })} />)}
-              </Row>
-              <Row gap={8} wrap>
-                <Txt variant="small" muted>{t('pay.nightTo')}</Txt>
-                {NIGHT_ENDS.map((h) => <Chip key={h} label={h} selected={pay.night!.end === h} onPress={() => set('night', { ...pay.night!, end: h })} />)}
-              </Row>
-              <Row gap={8} wrap>
-                <Txt variant="small" muted>{t('pay.multiplier')}</Txt>
-                {[1.3, 1.5, 2].map((m) => <Chip key={m} label={`${Math.round(m * 100)}%`} selected={pay.night!.multiplier === m}
-                  onPress={() => set('night', { ...pay.night!, multiplier: m })} />)}
-              </Row>
-            </>
-          ) : null}
-        </View>
-
+        {/* overtime and night pay live under Advanced; the example still includes them when on */}
         {/* live example so the owner sees what the settings mean */}
         <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 14, padding: 14, gap: 8 }}>
           <Txt variant="subheading">{t('pay.example')}</Txt>

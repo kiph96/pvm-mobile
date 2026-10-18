@@ -287,6 +287,11 @@ export const vi: Dict = {
     note: 'Dùng khi cửa hàng ngừng hoạt động hẳn. Các ca chưa bắt đầu sẽ bị huỷ, nhân viên thôi làm ở đây và được báo, mã tham gia hết hiệu lực. Lịch sử ca, doanh số và lương vẫn được giữ; ca đã làm vẫn được trả ở kỳ lương tới. Cửa hàng đã đóng không tính vào gói.',
     confirmTitle: 'Đóng {store}?', confirmMsg: 'Không thể mở lại cửa hàng này. Các ca sắp tới sẽ bị huỷ và nhân viên được báo.',
   },
+  advanced: {
+    title: 'Nâng cao', heading: 'Phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',
+    onList: 'Đang bật: {list}', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%',
+    save: 'Lưu cài đặt nâng cao', saved: 'Đã lưu cài đặt nâng cao',
+  },
   storeInfo: {
     type: 'Loại hình', changeType: 'Đổi', changeTypeTitle: 'Đổi loại hình cửa hàng',
     changeTypeNote: 'Cửa hàng giữ nguyên mọi thứ — nhân viên, mức lương, quy tắc, mẫu ca, lịch ca và lịch sử — và chỉ chuyển sang Business của loại hình mới.',

@@ -286,6 +286,11 @@ export const en = {
     note: 'For a store that has stopped trading for good. Shifts that have not started are cancelled, staff stop working here and are notified, and the join code stops working. Past shifts, sales and pay are kept; shifts already worked are still paid in the next payroll. Closed stores do not count toward your plan.',
     confirmTitle: 'Close {store}?', confirmMsg: 'This store cannot be reopened. Its upcoming shifts will be cancelled and staff notified.',
   },
+  advanced: {
+    title: 'Advanced', heading: 'Overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
+    onList: 'On: {list}', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%',
+    save: 'Save advanced settings', saved: 'Advanced settings saved',
+  },
   storeInfo: {
     type: 'Business type', changeType: 'Change', changeTypeTitle: "Change the store's business type",
     changeTypeNote: 'The store keeps everything — staff, wages, rules, shift templates, schedule and history — and just moves to your Business of the new type.',
