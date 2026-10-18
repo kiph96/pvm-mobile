@@ -4,6 +4,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import type { AssignmentView, ClockType } from '@/api/types';
+import { useBusinessSwitcher } from '@/components/businessSwitcher';
 import { AssignmentCard, shortStore } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Badge, Button, Card, Empty, IconBubble, IconButton, Loading, Row, Screen, Section, Txt } from '@/components/ui';
@@ -21,6 +22,7 @@ export default function StaffHome() {
   const org = useOrgKey();
   const { t } = useI18n();
   const { session } = useSession();
+  const switcher = useBusinessSwitcher();
   const employments = useMyEmployments();
   const schedule = useMySchedule(1, 21);
   const requests = useMyRequests();
@@ -40,7 +42,8 @@ export default function StaffHome() {
   const refresh = () => Promise.all([employments.refetch(), schedule.refetch(), requests.refetch(), notifications.refetch(), ...points.map((p) => p.refetch())]);
 
   return (
-    <Screen title={t('staff.hello', { name: session?.displayName.split(' ').at(-1) })} subtitle={session?.workspace?.name}
+    <Screen title={session?.workspace?.name} subtitle={t('staff.hello', { name: session?.displayName.split(' ').at(-1) })}
+      onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>
       {employments.data && employments.data.length === 0 ? (
@@ -92,6 +95,7 @@ export default function StaffHome() {
           {later.map((a) => <AssignmentCard key={a.id} a={a} storeName={storeName(a.storeId)} onPress={() => router.push(`/shift/${a.shiftId}`)} />)}
         </Section>
       ) : null}
+      {switcher.sheet}
     </Screen>
   );
 }

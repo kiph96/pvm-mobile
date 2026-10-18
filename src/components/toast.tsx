@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { t } from '@/i18n';
 import { useTheme } from '@/theme';
 import { errorMessage } from '@/utils/format';
+import { confirm } from './ui';
 
 type Kind = 'success' | 'error' | 'info';
 interface ToastState { message: string; kind: Kind }
@@ -66,7 +69,12 @@ export function useAction() {
       if (success) toast(typeof success === 'function' ? success(r) : success);
       return r;
     } catch (e) {
-      toast(errorMessage(e), 'error');
+      if ((e as { code?: string }).code === 'plan_upgrade_required') {
+        // adding a store or a person beyond the plan: offer the plan screen instead of a dead-end toast
+        if (await confirm(t('plan.limitTitle'), errorMessage(e), t('plan.seePlans'))) router.push('/billing');
+      } else {
+        toast(errorMessage(e), 'error');
+      }
       return undefined;
     } finally {
       setBusy(null);

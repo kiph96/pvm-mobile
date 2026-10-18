@@ -10,6 +10,7 @@ export const en = {
     somethingWrong: 'Something went wrong', language: 'Language', publishNow: 'Publish right away',
     publishNowHint: 'Your team can sign up immediately',
   },
+  storeStatus: { active: 'open', suspended: 'suspended', closed: 'closed' },
   status: {
     pending: 'pending', waitlisted: 'waitlisted', approved: 'approved', rejected: 'rejected', cancelled: 'cancelled',
     requested: 'requested', accepted: 'accepted', expired: 'expired', reported: 'reported', confirmed: 'confirmed',
@@ -76,6 +77,7 @@ export const en = {
   theme: { title: 'Appearance', system: 'System', light: 'Light', dark: 'Dark' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
+    plan_upgrade_required: 'Your current plan does not cover another store or staff member. Upgrade to Pro to continue.',
     invalid_access_key: 'This access key is wrong or has expired. Ask the store owner for the current key.',
     network: 'Cannot reach the server. Check your connection and the server address.',
     not_found: "Not found — it may have been removed or you don't have access.",
@@ -161,7 +163,7 @@ export const en = {
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
   },
   owner: {
-    greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', team: 'Team', shortToday: 'Short today',
+    greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', storesOfTotal: 'Stores here · {total} in all', team: 'Team', shortToday: 'Short today',
     needsOk: 'Needs your OK', allCaughtUp: 'All caught up — nothing waiting for you.', newHire: 'New hire',
     wantsToJoin: 'wants to join {store} · {ago}', joinedTeam: '{name} joined the team', requestDeclined: 'Request declined',
     shiftBadge: 'Shift', asksForShift: 'asks for a shift at {store} · {ago}', shiftBooked: 'Shift booked',
@@ -169,7 +171,7 @@ export const en = {
     approveSwap: 'Approve swap', swapApproved: 'Swap approved', swapRejected: 'Swap rejected',
     toReview: '{n} to review', reportedIssues: 'Reported attendance issues', today: 'Today',
     noShiftsToday: 'No shifts today', noShiftsTodayMsg: 'Generate shifts from your templates in the Schedule tab.',
-    plan: "This month's plan", details: 'Details', planLine: '{stores} stores · {people} team members', perMonth: '/ month (estimate)',
+    plan: 'Your plan', details: 'Details', planLine: '{stores} stores · {people} team members', perMonth: '/ month (estimate)',
   },
   schedule: {
     title: 'Schedule', prevWeek: 'Previous week', nextWeek: 'Next week',
@@ -216,6 +218,7 @@ export const en = {
     reported: 'Issue reported',
   },
   stores: {
+    business: 'Business you are viewing', acrossBusinesses: '{n} stores · {b} businesses', otherBusiness: 'In {name} — tap to switch there', addsTo: 'The new store will belong to {name}.', 
     title: 'Stores', locations: '{n} locations', locations_one: '1 location', add: 'Add store', firstTitle: 'Add your first store',
     firstMsg: 'Each store gets its own shifts, team and access key.', upTo: 'Up to {n} staff', perShift: '{min}/{opt}/{max} per shift',
     auto: 'Auto-approve', youApprove: 'You approve', ready: 'Store ready! 🎉',
@@ -254,6 +257,28 @@ export const en = {
     runTitle: 'Run payroll?', runMsg: 'This calculates pay for every completed shift in the period and finalizes it.', done: 'Payroll done: {amount}',
     runLine: 'Run #{n} · {lines} lines', payslips: 'Payslips', shifts: '{n} shifts', shifts_one: '1 shift', bonus: 'bonus {amount}',
     from: 'From', to: 'To (inclusive)', createPeriod: 'Create period', periodCreated: 'Pay period created',
+  },
+  switcher: {
+    title: 'Switch business', note: 'Each business has its own stores, staff, schedule and plan.', here: 'Viewing',
+    stores: '{n} stores', join: 'Join with a key', all: 'All', change: 'Switch', open: 'Open',
+  },
+  plan: {
+    current: 'Current plan', free: 'Free', proN: 'Pro · {n} stores', test: 'Test',
+    usage: '{stores}/{storeLimit} stores · {employees} staff', unlimitedStaff: 'unlimited staff',
+    renews: 'renews {date}', endsOn: 'ends {date}', expired: 'Pro expired on {date}.',
+    overLimit: 'You are using more than your plan covers. Everything keeps working, but you need to upgrade to add stores or staff.',
+    pricing: 'Pricing', freeLine: '{stores} store, up to {people} staff.',
+    proLine: '{price}/month for up to {n} stores, unlimited staff. From store {from}: {extra} per extra store.',
+    upgrade: 'Upgrade to Pro', change: 'Change plan', stores: 'Number of stores', includes: 'Includes up to {n} stores',
+    breakdown: '{base} + {extra} × {each}', perMonth: ' /month', tooSmall: 'You have {n} stores — this plan is too small.',
+    subscribe: 'Subscribe to Pro', switch: 'Switch to this plan', yourPlan: 'Your current plan', restore: 'Restore purchases',
+    manage: 'Manage subscription', thanks: 'Thank you! Pro is now active.', cancelled: 'Purchase cancelled',
+    restored: 'Purchases restored', noProduct: 'Could not load plans from the app store. Please try again.',
+    devNote: 'Development server: test purchase without the App Store / Google Play.', devBuy: 'Test-buy Pro for {n} stores',
+    webNote: 'Buy a plan in the PVM app on iPhone or Android.',
+    buildNote: 'In-app purchases are not enabled in this build.',
+    limitTitle: 'Upgrade needed', seePlans: 'See plans',
+    legal: 'Plans renew monthly through the App Store / Google Play until cancelled. Cancel anytime in your app store account settings.',
   },
   billing: {
     thisMonth: 'This month', plan: 'Plan: {plan} · billed on your monthly peak', base: 'Base fee', stores: '{n} stores',

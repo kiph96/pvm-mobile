@@ -100,6 +100,7 @@ export function ago(iso: string) {
 
 export function money(amount: number | null | undefined, currency = 'VND') {
   if (amount == null) return '—';
+  if (currency === 'USD') return `$${Number(amount).toFixed(2)}`;
   const digits = currency === 'VND' ? 0 : 2;
   const sep = currentLang() === 'vi' ? '.' : ',';
   const [int, frac] = Number(amount).toFixed(digits).split('.');
@@ -113,7 +114,8 @@ export function hoursBetween(start: string, end: string) {
 }
 
 export function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]!.toUpperCase()).join('');
+  // skip words that start with punctuation ("K Store - TB" -> "ST")
+  return name.split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w)).slice(-2).map((w) => w[0]!.toUpperCase()).join('');
 }
 
 export function titleCase(s: string) {

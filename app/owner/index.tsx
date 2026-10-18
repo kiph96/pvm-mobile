@@ -4,14 +4,15 @@ import React from 'react';
 import { View } from 'react-native';
 
 import type { AssignmentView } from '@/api/types';
+import { useBusinessSwitcher } from '@/components/businessSwitcher';
 import { ShiftCard, shortStore, useStores } from '@/components/domain';
 import { GettingStarted } from '@/components/gettingStarted';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, IconButton, Loading, Row, Screen, Section, Stat, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
-import { useApprovals, useNotifications, useOrgKey } from '@/state/queries';
+import { useAllStores, useApprovals, useNotifications, useOrgKey } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
-import { ago, localDateOf, money, relativeDay, timeRange, today } from '@/utils/format';
+import { ago, fullDate, localDateOf, relativeDay, timeRange, today } from '@/utils/format';
 
 export default function OwnerHome() {
   const api = useApi();
@@ -22,7 +23,9 @@ export default function OwnerHome() {
   const { stores, isLoading: storesLoading, refetch: refetchStores } = useStores();
   const approvals = useApprovals();
   const notifications = useNotifications();
-  const estimate = useQuery({ queryKey: ['estimate', org], queryFn: api.estimate });
+  const plan = useQuery({ queryKey: ['plan', org], queryFn: api.plan });
+  const switcher = useBusinessSwitcher();
+  const all = useAllStores();
   const day = today();
   const todays = useQueries({
     queries: stores.map((s) => ({ queryKey: ['shifts', org, s.id, day, day], queryFn: () => api.shifts(s.id, day, day) })),
@@ -35,10 +38,10 @@ export default function OwnerHome() {
   const unread = notifications.data?.filter((n) => !n.deliveredAt).length ?? 0;
   const shiftText = (a: AssignmentView) => `${relativeDay(localDateOf(a.startsAt))} ${timeRange(a.startsAt, a.endsAt)}`;
 
-  const refresh = () => Promise.all([refetchStores(), approvals.refetch(), notifications.refetch(), estimate.refetch(), ...todays.map((q) => q.refetch())]);
+  const refresh = () => Promise.all([refetchStores(), approvals.refetch(), notifications.refetch(), plan.refetch(), ...todays.map((q) => q.refetch())]);
 
   return (
-    <Screen title={session?.workspace?.name ?? t('tabs.home')}
+    <Screen title={session?.workspace?.name ?? t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       subtitle={t('owner.greeting', { part: t(`time.${greeting()}`), name: session?.displayName.split(' ').at(-1) })}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>
@@ -46,8 +49,10 @@ export default function OwnerHome() {
       <GettingStarted stores={stores} storesLoaded={!storesLoading} />
 
       <Row wrap gap={10} style={{ alignItems: 'stretch' }}>
-        <Stat icon="storefront-outline" label={t('owner.stores')} value={stores.length} tone="accent" onPress={() => router.push('/owner/stores')} />
-        <Stat icon="people-outline" label={t('owner.team')} value={estimate.data?.activeEmployees ?? '–'} tone="info" onPress={() => router.push('/owner/team')} />
+        {/* stores of this business; the label adds the total when the owner has other businesses */}
+        <Stat icon="storefront-outline" value={stores.length} tone="accent" onPress={() => router.push('/owner/stores')}
+          label={all.total > stores.length ? t('owner.storesOfTotal', { total: all.total }) : t('owner.stores')} />
+        <Stat icon="people-outline" label={t('owner.team')} value={plan.data?.employees ?? '–'} tone="info" onPress={() => router.push('/owner/team')} />
         <Stat icon={understaffed ? 'warning-outline' : 'checkmark-done-outline'} label={t('owner.shortToday')} value={understaffed}
           tone={understaffed ? 'danger' : 'success'} onPress={() => router.push('/owner/schedule')} />
       </Row>
@@ -135,14 +140,24 @@ export default function OwnerHome() {
         ))}
       </Section>
 
-      {estimate.data ? (
+      {plan.data ? (
         <Section title={t('owner.plan')} action={t('owner.details')} onAction={() => router.push('/billing')}>
-          <Card style={{ gap: 4 }}>
-            <Txt variant="small" muted>{t('owner.planLine', { stores: estimate.data.activeStores, people: estimate.data.activeEmployees })}</Txt>
-            <Txt variant="heading">{money(estimate.data.total, estimate.data.currency)} <Txt variant="small" muted>{t('owner.perMonth')}</Txt></Txt>
+          <Card style={{ gap: 4 }} tone={plan.data.overLimit ? 'warning' : undefined} onPress={() => router.push('/billing')}>
+            <Txt variant="heading">
+              {plan.data.plan === 'pro' ? t('plan.proN', { n: plan.data.storeLimit }) : t('plan.free')}
+              {plan.data.plan === 'pro' && plan.data.subscription ? (
+                <Txt variant="small" muted> · {t('plan.renews', { date: fullDate(plan.data.subscription.expiresAt) })}</Txt>
+              ) : null}
+            </Txt>
+            <Txt variant="small" muted>
+              {t('plan.usage', { stores: plan.data.stores, storeLimit: plan.data.storeLimit, employees: plan.data.employees })}
+              {plan.data.employeeLimit != null ? ` / ${plan.data.employeeLimit}` : ''}
+            </Txt>
+            {plan.data.overLimit ? <Txt variant="small">{t('plan.overLimit')}</Txt> : null}
           </Card>
         </Section>
       ) : null}
+      {switcher.sheet}
     </Screen>
   );
 }

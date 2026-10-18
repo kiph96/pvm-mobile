@@ -127,7 +127,10 @@ function seed() {
     enrollments: [] as Enrollment[], violations: [] as Violation[], points: [] as Points[], notices: [] as Notice[],
     attendance: [] as (T.AttendanceView & { org: string })[], periods: [] as (T.PeriodView & { org: string })[],
     runs: [] as T.RunView[], accessKeys: {} as Record<string, T.AccessKeyView>,
-    digest: {} as Record<string, { enabled: boolean; sendAt: string; language: 'vi' | 'en' }> };
+    digest: {} as Record<string, { enabled: boolean; sendAt: string; language: 'vi' | 'en' }>,
+    // K Coffee House (2 stores, 5 people) pays for Pro 3 so the demo is not blocked; Lan Tea Corner is on the free plan
+    plans: { [ORG1]: { productId: 'pvm_pro_3', storeQuota: 3, expiresAt: new Date(Date.now() + 20 * DAY).toISOString() } } as
+      Record<string, { productId: string; storeQuota: number; expiresAt: string }> };
 }
 
 type Db = ReturnType<typeof seed>;
@@ -240,6 +243,42 @@ export function createMockApi(actor: () => Actor): Api {
     };
   };
 
+  // Same pricing as the server's pvm.plan defaults
+  const PLAN = { freeMaxStores: 1, freeMaxEmployees: 3, basePrice: 9.99, includedStores: 3, extraStorePrice: 4.99, maxStores: 20 };
+  const tier = (n: number): T.PlanTier => ({ storeQuota: n, productId: `pvm_pro_${n}`,
+    monthlyPrice: Math.round((PLAN.basePrice + Math.max(0, n - PLAN.includedStores) * PLAN.extraStorePrice) * 100) / 100 });
+  const usage = (o: string) => ({
+    stores: db.stores.filter((s) => s.org === o && s.status === 'active').length,
+    employees: new Set(db.employments.filter((e) => e.org === o && e.status === 'active').map((e) => e.membershipId)).size,
+  });
+  const allowance = (o: string) => {
+    const s = db.plans[o];
+    return s && Date.parse(s.expiresAt) > Date.now() ? { plan: 'pro' as const, stores: s.storeQuota, employees: null }
+      : { plan: 'free' as const, stores: PLAN.freeMaxStores, employees: PLAN.freeMaxEmployees as number | null };
+  };
+  const requireRoom = (o: string, addStores: number, addEmployees: number) => {
+    const u = usage(o);
+    const a = allowance(o);
+    if ((addStores && u.stores + addStores > a.stores) || (addEmployees && a.employees != null && u.employees + addEmployees > a.employees)) {
+      fail(402, t('errors.plan_upgrade_required'), 'plan_upgrade_required');
+    }
+  };
+  const planView = (o: string): T.PlanView => {
+    const u = usage(o);
+    const a = allowance(o);
+    const free = u.stores <= PLAN.freeMaxStores && u.employees <= PLAN.freeMaxEmployees;
+    const need = free ? null : u.stores <= PLAN.maxStores ? tier(Math.max(PLAN.includedStores, u.stores)) : null;
+    const s = db.plans[o];
+    return { currency: 'USD', ...u, freeMaxStores: PLAN.freeMaxStores, freeMaxEmployees: PLAN.freeMaxEmployees,
+      basePrice: PLAN.basePrice, includedStores: PLAN.includedStores, extraStorePrice: PLAN.extraStorePrice,
+      plan: a.plan, storeLimit: a.stores, employeeLimit: a.employees,
+      subscription: s ? { ...s, willRenew: true, store: 'dev', provider: 'dev', environment: 'sandbox', active: a.plan === 'pro' } : null,
+      needed: free ? 'free' : need ? 'pro' : 'contact', neededTier: need,
+      overLimit: u.stores > a.stores || (a.employees != null && u.employees > a.employees),
+      tiers: Array.from({ length: PLAN.maxStores - PLAN.includedStores + 1 }, (_, i) => tier(PLAN.includedStores + i)),
+      entitlement: 'pro', appUserId: o, devPurchase: true };
+  };
+
   /** Same as the server's auto-fill: every active template, today .. today + days_ahead, published. */
   const autoFill = (storeId: string) => {
     const p = db.policies[storeId];
@@ -286,8 +325,13 @@ export function createMockApi(actor: () => Actor): Api {
       member();
       return db.stores.filter((s) => s.org === org()).map(({ org: _o, ...s }) => s);
     }),
+    storesOf: (organizationId) => wait(() => {
+      if (!db.memberships.some((m) => m.org === organizationId && m.userId === me())) fail(403, t('mock.ownersOnly'));
+      return db.stores.filter((s) => s.org === organizationId).map(({ org: _o, ...s }) => s);
+    }),
     createStore: (req) => wait(() => {
       manager();
+      requireRoom(org(), 1, 0);
       const store = { id: id('b0'), org: org(), name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso() };
       db.stores.push(store);
       db.policies[store.id] = { ...db.policies[D1], id: id('c2'), version: 1, effectiveFrom: nowIso() };
@@ -336,6 +380,7 @@ export function createMockApi(actor: () => Actor): Api {
       manager();
       const x = db.enrollments.find((e) => e.id === eid) ?? fail(404, t('mock.notFound'));
       let m = db.memberships.find((mm) => mm.org === x.org && mm.userId === x.userId);
+      requireRoom(x.org, 0, m && db.employments.some((e) => e.membershipId === m!.id && e.status === 'active') ? 0 : 1);
       if (!m) {
         m = { id: id('a1'), org: x.org, userId: x.userId, role: 'employee' };
         db.memberships.push(m);
@@ -694,6 +739,20 @@ export function createMockApi(actor: () => Actor): Api {
       const m = member();
       const closed = db.periods.filter((p) => p.org === org() && p.status === 'closed');
       return closed.flatMap((p) => payslipsFor(p.startsAt, p.endsAt, org())).filter((s) => memberOf(emp(s.employmentId)).id === m.id);
+    }),
+    plan: () => wait(() => {
+      manager();
+      return planView(org());
+    }),
+    syncPlan: () => wait(() => {
+      manager();
+      return planView(org());
+    }),
+    devPurchase: (storeQuota) => wait(() => {
+      manager();
+      const n = Math.max(PLAN.includedStores, storeQuota);
+      db.plans[org()] = { productId: `pvm_pro_${n}`, storeQuota: n, expiresAt: new Date(Date.now() + 30 * DAY).toISOString() };
+      return planView(org());
     }),
     estimate: () => wait(() => {
       manager();

@@ -106,6 +106,30 @@ The screen shows a live example of a shift's pay. Pay rules are saved as a new s
 
 On payslips, overtime and night pay appear as separate lines (`overtime_premium`, `night_premium` next to `hourly_wage`). Each line keeps a snapshot of the hours, minutes and rules used. Stores without pay rules keep the old behaviour: per-shift wages, with clocked time limited to the shift.
 
+## Plans and in-app purchases
+
+| Plan | What it covers | Price |
+|---|---|---|
+| Free | 1 store, up to 3 staff | free |
+| Pro | up to 3 stores, unlimited staff | $9.99 / month |
+| Pro, 4+ stores | each store from the 4th | + $4.99 / month per store |
+
+All numbers are backend settings (`PVM_PLAN_FREE_MAX_EMPLOYEES`, `PVM_PLAN_BASE_PRICE`, `PVM_PLAN_INCLUDED_STORES`, `PVM_PLAN_EXTRA_STORE_PRICE`, see `pvm.plan` in `application.yml`). The backend enforces them: creating a store or approving a new staff member beyond the plan returns `402 plan_upgrade_required`, and the app offers the **Gói dịch vụ** (plan) screen. Nothing that already exists is blocked or removed.
+
+Purchases go through the App Store / Google Play using [RevenueCat](https://www.revenuecat.com). The app store cannot charge "N × $4.99", so **each store count is its own subscription product**: `pvm_pro_3` ($9.99), `pvm_pro_4` ($14.98), `pvm_pro_5` ($19.97) … up to `pvm_pro_20`. Changing the number of stores is an upgrade or downgrade between them. The subscription belongs to the **business**, not the person who pays: the RevenueCat app user id is the organization id.
+
+Setup:
+
+1. **App Store Connect** → your app → Subscriptions: create one subscription group (e.g. "PVM Pro") with monthly auto-renewable products `pvm_pro_3` … `pvm_pro_20`. Apple only allows fixed price points, so use the closest one (for example $14.99 for 4 stores). The app shows the store's own localized price.
+2. **Google Play Console** → Monetize → Subscriptions: create the same product ids, each with a monthly base plan. Play allows exact prices.
+3. **RevenueCat**: add the iOS and Android apps, import the products, and create the entitlement `pro` with every `pvm_pro_*` product attached.
+   * Public SDK keys → `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` in `.env`
+   * Secret API key (`sk_…`) → `PVM_REVENUECAT_SECRET_KEY` (the backend reads the current state right after a purchase)
+   * Integrations → Webhooks: URL `https://<your API>/api/billing/revenuecat/webhook`, Authorization header = the value of `PVM_REVENUECAT_WEBHOOK_AUTH`
+4. Purchases need a **development or store build** on a phone (`npx expo run:ios` / `npx expo run:android`, or EAS Build). Expo Go and the web app cannot buy; they show a note instead. Test with an App Store sandbox account or a Play license tester.
+
+On a development server (`pvm.auth.dev-login`), the plan screen has a **Mua thử** (test purchase) button that activates Pro for 30 days without a store, so the limits can be tried on the web. The demo mode does the same locally.
+
 ## Two data modes
 
 * **Explore the demo**: in-memory data (`src/api/mock.ts`) seeded like `002-seed-dev.sql`, with shifts generated around today. It needs no backend and resets when the app reloads.

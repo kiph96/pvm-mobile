@@ -173,3 +173,20 @@ export interface StaffingDigest {
   totals: { shifts: number; understaffedShifts: number; peopleMissing: number; belowIdealShifts: number; drafts: number; pendingRequests: number };
   stores: { storeId: UUID; storeName: string; shifts: number; peopleMissing: number; problems: DigestShiftLine[] }[];
 }
+
+// ---------------------------------------------------------------- app plan (in-app purchase)
+/** Pro for up to storeQuota stores; productId is the App Store / Play product. */
+export interface PlanTier { storeQuota: number; monthlyPrice: number; productId: string }
+export interface PlanSubscription {
+  productId: string; storeQuota: number; expiresAt: ISODateTime; willRenew: boolean; store: string | null;
+  provider: 'revenuecat' | 'dev'; environment: 'production' | 'sandbox'; active: boolean;
+}
+export interface PlanView {
+  currency: string; stores: number; employees: number; freeMaxStores: number; freeMaxEmployees: number;
+  basePrice: number; includedStores: number; extraStorePrice: number;
+  /** what the business has now */
+  plan: 'free' | 'pro'; storeLimit: number; employeeLimit: number | null; subscription: PlanSubscription | null;
+  /** cheapest plan covering today's usage */
+  needed: 'free' | 'pro' | 'contact'; neededTier: PlanTier | null; overLimit: boolean; tiers: PlanTier[];
+  entitlement: string; appUserId: UUID; devPurchase: boolean;
+}

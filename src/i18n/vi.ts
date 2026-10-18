@@ -11,6 +11,7 @@ export const vi: Dict = {
     somethingWrong: 'Đã có lỗi xảy ra', language: 'Ngôn ngữ', publishNow: 'Công bố ngay',
     publishNowHint: 'Nhân viên có thể đăng ký ngay',
   },
+  storeStatus: { active: 'đang hoạt động', suspended: 'tạm ngưng', closed: 'đã đóng cửa' },
   status: {
     pending: 'chờ duyệt', waitlisted: 'danh sách chờ', approved: 'đã duyệt', rejected: 'bị từ chối', cancelled: 'đã huỷ',
     requested: 'đã gửi', accepted: 'đã đồng ý', expired: 'hết hạn', reported: 'đã báo cáo', confirmed: 'đã xác nhận',
@@ -77,6 +78,7 @@ export const vi: Dict = {
   theme: { title: 'Giao diện', system: 'Theo hệ thống', light: 'Sáng', dark: 'Tối' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
+    plan_upgrade_required: 'Gói hiện tại không đủ để thêm cửa hàng hoặc nhân viên. Nâng cấp lên Pro để tiếp tục.',
     invalid_access_key: 'Mã tham gia không đúng hoặc đã hết hạn. Hãy hỏi chủ cửa hàng mã hiện tại.',
     network: 'Không kết nối được máy chủ. Kiểm tra mạng và địa chỉ máy chủ.',
     not_found: 'Không tìm thấy dữ liệu — có thể đã bị xoá hoặc bạn không có quyền xem.',
@@ -162,7 +164,7 @@ export const vi: Dict = {
     violations: 'Chuyên cần & vi phạm', notifications: 'Thông báo', payslips: 'Phiếu lương của tôi', join: 'Tham gia cửa hàng', digest: 'Báo cáo ca hằng ngày',
   },
   owner: {
-    greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
+    greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', storesOfTotal: 'Cửa hàng ở đây · tổng {total}', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
     needsOk: 'Cần bạn duyệt', allCaughtUp: 'Đã xử lý hết — không có gì đang chờ bạn.', newHire: 'Nhân viên mới',
     wantsToJoin: 'muốn tham gia {store} · {ago}', joinedTeam: '{name} đã gia nhập', requestDeclined: 'Đã từ chối yêu cầu',
     shiftBadge: 'Ca làm', asksForShift: 'xin ca tại {store} · {ago}', shiftBooked: 'Đã xếp ca',
@@ -170,7 +172,7 @@ export const vi: Dict = {
     approveSwap: 'Duyệt đổi ca', swapApproved: 'Đã duyệt đổi ca', swapRejected: 'Đã từ chối đổi ca',
     toReview: '{n} cần xem', reportedIssues: 'Vi phạm chuyên cần được báo cáo', today: 'Hôm nay',
     noShiftsToday: 'Hôm nay không có ca', noShiftsTodayMsg: 'Tạo ca từ mẫu ca trong mục Lịch ca.',
-    plan: 'Gói tháng này', details: 'Chi tiết', planLine: '{stores} cửa hàng · {people} nhân viên', perMonth: '/ tháng (ước tính)',
+    plan: 'Gói của bạn', details: 'Chi tiết', planLine: '{stores} cửa hàng · {people} nhân viên', perMonth: '/ tháng (ước tính)',
   },
   schedule: {
     title: 'Lịch ca', prevWeek: 'Tuần trước', nextWeek: 'Tuần sau',
@@ -217,6 +219,7 @@ export const vi: Dict = {
     reported: 'Đã báo cáo vi phạm',
   },
   stores: {
+    business: 'Doanh nghiệp đang xem', acrossBusinesses: '{n} cửa hàng · {b} doanh nghiệp', otherBusiness: 'Thuộc {name} — chạm để chuyển sang', addsTo: 'Cửa hàng mới sẽ thuộc doanh nghiệp {name}.', 
     title: 'Cửa hàng', locations: '{n} cửa hàng', locations_one: '1 cửa hàng', add: 'Thêm cửa hàng', firstTitle: 'Thêm cửa hàng đầu tiên',
     firstMsg: 'Mỗi cửa hàng có ca làm, nhân viên và mã tham gia riêng.', upTo: 'Tối đa {n} nhân viên', perShift: '{min}/{opt}/{max} người mỗi ca',
     auto: 'Tự động duyệt', youApprove: 'Bạn duyệt', ready: 'Cửa hàng đã sẵn sàng! 🎉',
@@ -255,6 +258,28 @@ export const vi: Dict = {
     runTitle: 'Chạy lương?', runMsg: 'Hệ thống sẽ tính lương cho mọi ca hoàn thành trong kỳ và chốt lại.', done: 'Đã chạy lương: {amount}',
     runLine: 'Lần {n} · {lines} dòng', payslips: 'Phiếu lương', shifts: '{n} ca', shifts_one: '1 ca', bonus: 'thưởng {amount}',
     from: 'Từ ngày', to: 'Đến ngày (bao gồm)', createPeriod: 'Tạo kỳ lương', periodCreated: 'Đã tạo kỳ lương',
+  },
+  switcher: {
+    title: 'Đổi doanh nghiệp', note: 'Mỗi doanh nghiệp có cửa hàng, nhân viên, lịch ca và gói riêng.', here: 'Đang xem',
+    stores: '{n} cửa hàng', join: 'Tham gia bằng mã', all: 'Tất cả', change: 'Đổi', open: 'Mở',
+  },
+  plan: {
+    current: 'Gói hiện tại', free: 'Miễn phí', proN: 'Pro · {n} cửa hàng', test: 'Thử nghiệm',
+    usage: '{stores}/{storeLimit} cửa hàng · {employees} nhân viên', unlimitedStaff: 'không giới hạn nhân viên',
+    renews: 'gia hạn {date}', endsOn: 'kết thúc {date}', expired: 'Gói Pro đã hết hạn ngày {date}.',
+    overLimit: 'Bạn đang dùng nhiều hơn gói hiện tại. Mọi thứ vẫn hoạt động, nhưng cần nâng cấp để thêm cửa hàng hoặc nhân viên.',
+    pricing: 'Bảng giá', freeLine: '{stores} cửa hàng, tối đa {people} nhân viên.',
+    proLine: '{price}/tháng cho tối đa {n} cửa hàng, không giới hạn nhân viên. Từ cửa hàng thứ {from}: thêm {extra}/cửa hàng.',
+    upgrade: 'Nâng cấp lên Pro', change: 'Đổi gói', stores: 'Số cửa hàng', includes: 'Gồm tối đa {n} cửa hàng',
+    breakdown: '{base} + {extra} × {each}', perMonth: ' /tháng', tooSmall: 'Bạn đang có {n} cửa hàng — gói này chưa đủ.',
+    subscribe: 'Đăng ký Pro', switch: 'Chuyển sang gói này', yourPlan: 'Gói bạn đang dùng', restore: 'Khôi phục giao dịch',
+    manage: 'Quản lý đăng ký', thanks: 'Cảm ơn bạn! Gói Pro đã được kích hoạt.', cancelled: 'Đã huỷ thanh toán',
+    restored: 'Đã khôi phục giao dịch', noProduct: 'Chưa tải được gói từ cửa hàng ứng dụng. Vui lòng thử lại.',
+    devNote: 'Máy chủ phát triển: mua thử không cần App Store / Google Play.', devBuy: 'Mua thử Pro {n} cửa hàng',
+    webNote: 'Hãy mua gói trong ứng dụng PVM trên iPhone hoặc Android.',
+    buildNote: 'Bản này chưa bật thanh toán trong ứng dụng.',
+    limitTitle: 'Cần nâng cấp gói', seePlans: 'Xem gói',
+    legal: 'Gói tự động gia hạn hằng tháng qua App Store / Google Play cho đến khi bạn huỷ. Bạn có thể huỷ bất cứ lúc nào trong cài đặt tài khoản cửa hàng ứng dụng.',
   },
   billing: {
     thisMonth: 'Tháng này', plan: 'Gói: {plan} · tính theo mức cao nhất trong tháng', base: 'Phí cơ bản', stores: '{n} cửa hàng',

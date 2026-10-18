@@ -46,9 +46,11 @@ export function Txt({ variant = 'body', muted, color, style, children, numberOfL
 }
 
 // -------------------------------------------------------------- screen
-export function Screen({ title, subtitle, right, children, onRefresh, refreshing = false, scroll = true, padded = true }: {
+export function Screen({ title, subtitle, right, children, onRefresh, refreshing = false, scroll = true, padded = true, onTitlePress, titleLabel }: {
   title?: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode; onRefresh?: () => void;
   refreshing?: boolean; scroll?: boolean; padded?: boolean;
+  /** makes the title a button with a ▾ (e.g. the business switcher); titleLabel is its accessibility label */
+  onTitlePress?: () => void; titleLabel?: string;
 }) {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
@@ -56,7 +58,15 @@ export function Screen({ title, subtitle, right, children, onRefresh, refreshing
     <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
       <View style={{ flex: 1 }}>
         {subtitle ? <Txt variant="small" muted>{subtitle}</Txt> : null}
-        <Txt variant="title">{title}</Txt>
+        {onTitlePress ? (
+          <Pressable onPress={onTitlePress} accessibilityRole="button" accessibilityLabel={titleLabel ?? title} hitSlop={6}
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
+            <Txt variant="title" style={{ flexShrink: 1 }}>{title}</Txt>
+            <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="chevron-down" size={16} color={colors.text} />
+            </View>
+          </Pressable>
+        ) : <Txt variant="title">{title}</Txt>}
       </View>
       {right}
     </View>
@@ -331,6 +341,7 @@ export function Stepper({ label, value, onChange, min = 0, max = 99 }: {
   const { colors } = useTheme();
   const btn = (icon: IconName, next: number, off: boolean) => (
     <Pressable disabled={off} onPress={() => { tap(); onChange(next); }}
+      accessibilityRole="button" accessibilityLabel={`${label} ${icon === 'add' ? '+' : '−'}`}
       style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt, opacity: off ? 0.4 : 1 }}>
       <Ionicons name={icon} size={18} color={colors.text} />
     </Pressable>

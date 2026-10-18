@@ -73,7 +73,8 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     const bearer = token ?? a.accessToken;
     if (bearer) h.Authorization = `Bearer ${bearer}`;
     else if (a.userId) h['X-User-Id'] = a.userId;
-    if (a.organizationId) h['X-Organization-Id'] = a.organizationId;
+    // a call may name another business explicitly (e.g. listing stores of all my businesses)
+    if (a.organizationId && !h['X-Organization-Id']) h['X-Organization-Id'] = a.organizationId;
     try {
       return await fetch(root + '/api' + path, {
         method,
@@ -120,6 +121,8 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.OrganizationView>('POST', '/organizations', { name, billingTimezone }),
     organization: () => call<T.OrganizationView>('GET', '/organization'),
     stores: () => call<T.StoreView[]>('GET', '/stores'),
+    /** Stores of any business I belong to, not only the one I am working in. */
+    storesOf: (organizationId: string) => call<T.StoreView[]>('GET', '/stores', undefined, { 'X-Organization-Id': organizationId }),
     createStore: (req: T.CreateStore) => call<T.StoreCreated>('POST', '/stores', req),
     rotateAccessKey: (storeId: string) => call<T.AccessKeyView>('POST', `/stores/${storeId}/access-key/rotate`),
     policy: (storeId: string) => call<T.PolicyView>('GET', `/stores/${storeId}/policy`),
@@ -194,6 +197,9 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     payslips: (runId: string) => call<T.Payslip[]>('GET', `/payroll/runs/${runId}/payslips`),
     myPayslips: () => call<T.Payslip[]>('GET', '/me/payslips'),
     estimate: () => call<T.Estimate>('GET', '/billing/estimate'),
+    plan: () => call<T.PlanView>('GET', '/billing/plan'),
+    syncPlan: () => call<T.PlanView>('POST', '/billing/plan/sync'),
+    devPurchase: (storeQuota: number) => call<T.PlanView>('POST', '/billing/plan/dev-purchase', { storeQuota }),
     invoices: () => call<T.InvoiceView[]>('GET', '/billing/invoices'),
     notifications: () => call<T.NotificationView[]>('GET', '/notifications'),
 

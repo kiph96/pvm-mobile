@@ -36,7 +36,7 @@ export function t(key: string, params?: Params): string {
 }
 
 /** Translate an enum-like value (status, role, code) with a readable fallback. */
-export function tv(group: 'status' | 'role' | 'code', value: string): string {
+export function tv(group: 'status' | 'storeStatus' | 'role' | 'code', value: string): string {
   const r = t(`${group}.${value}`);
   return r === `${group}.${value}` ? value.replace(/_/g, ' ').toLowerCase() : r;
 }
