@@ -12,9 +12,22 @@ export type OrgRole = 'owner' | 'admin' | 'payroll' | 'employee';
 export interface MyOrganization {
   organizationId: UUID; name: string; role: OrgRole;
   description?: string | null;
-  /** null = no logo; see api.logoUrl */
   logoVersion?: number | null;
+  /** system business type code; the app shows its translated name (see businessName) */
+  businessType: string;
+  /** owner of this Business (staff may work for several owners of the same type) */
+  ownerName: string | null;
+  storeNames: string[];
+  /** its active stores, to show and open them directly */
+  stores: { id: UUID; name: string; address?: string | null }[];
 }
+/** Open a store of a system business type: the owner's Business for that type is found or created. */
+export interface OpenStore { businessType: string; name: string; timezone: string; currency: string; address?: string | null }
+export interface StoreOpened {
+  organizationId: UUID; businessType: string; newBusiness: boolean; store: StoreView; policy: PolicyView; accessKey: AccessKeyView;
+}
+/** A store whose business type changed: the same store (id and history), now in the owner's Business of that type. */
+export interface StoreMoved { organizationId: UUID; businessType: string; newBusiness: boolean; store: StoreView }
 export interface StoreView {
   id: UUID; name: string; timezone: string; currency: string; status: string; openedAt: ISODateTime;
   /** street address shown to staff (null when not set) */
@@ -22,11 +35,8 @@ export interface StoreView {
 }
 export interface OrganizationView {
   id: UUID; name: string; status: string; billingTimezone: string; myRole: OrgRole; stores: StoreView[];
-  description?: string | null; logoVersion?: number | null;
+  description?: string | null; logoVersion?: number | null; businessType: string;
 }
-export interface UpdateOrganization { name: string; description: string | null }
-/** base64 image bytes (no data: prefix), PNG / JPEG / WebP up to 1 MB */
-export interface UploadLogo { contentType: 'image/png' | 'image/jpeg' | 'image/webp'; data: string }
 export interface AccessKeyView { storeId: UUID; version: number; accessKey: string; expiresAt: ISODateTime }
 export interface PolicyView {
   id: UUID; version: number; effectiveFrom: ISODateTime; employeeLimit: number;
@@ -207,6 +217,10 @@ export interface PlanView {
   /** cheapest plan covering today's usage */
   needed: 'free' | 'pro' | 'contact'; neededTier: PlanTier | null; overLimit: boolean; tiers: PlanTier[];
   entitlement: string; appUserId: UUID; devPurchase: boolean;
+  /** the plan is the owner's: stores/employees are totals across this many Businesses */
+  businesses: number;
+  /** only the owner buys or changes the plan */
+  canPurchase: boolean;
 }
 
 // ---------------------------------------------------------------- sales on a shift

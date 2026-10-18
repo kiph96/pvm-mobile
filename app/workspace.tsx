@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 import type { MyOrganization } from '@/api/types';
+import { businessIcon, businessName } from '@/components/businessType';
+import { OpenStoreSheet } from '@/components/openStore';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, IconBubble, IconButton, ListItem, Loading, Row, Screen, Section, Sheet, Txt } from '@/components/ui';
 import { tv, useI18n } from '@/i18n';
@@ -18,7 +20,6 @@ export default function WorkspacePicker() {
   const signOut = useSignOut();
   const [run, busy] = useAction();
   const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
   const qc = useQueryClient();
   const orgs = useQuery({ queryKey: ['my-orgs', session?.userId], queryFn: api.myOrganizations, enabled: !!session });
   // join requests not yet turned into a business here; poll while one is waiting so approval shows up by itself
@@ -37,18 +38,10 @@ export default function WorkspacePicker() {
   const refresh = () => { orgs.refetch(); requests.refetch(); };
 
   const open = async (o: MyOrganization) => {
-    await chooseWorkspace({ id: o.organizationId, name: o.name, role: o.role });
+    await chooseWorkspace({ id: o.organizationId, name: businessName(o), role: o.role, businessType: o.businessType });
     router.replace(o.role === 'owner' || o.role === 'admin' ? '/owner' : '/staff');
   };
 
-  const create = async () => {
-    const org = await run('create', () => api.createOrganization(name.trim(), 'Asia/Ho_Chi_Minh'), t('workspace.created'));
-    if (org) {
-      setCreating(false);
-      await chooseWorkspace({ id: org.id, name: org.name, role: 'owner' });
-      router.replace('/owner');
-    }
-  };
 
   return (
     <Screen title={t('workspace.hello', { name: greetingName(session) })} subtitle={t('workspace.where')}
@@ -59,8 +52,9 @@ export default function WorkspacePicker() {
           {orgs.data.length === 0 && shownRequests.length === 0 ? (
             <Empty icon="storefront-outline" title={t('workspace.noneTitle')} message={t('workspace.noneMsg')} />
           ) : orgs.data.map((o) => (
-            <ListItem key={o.organizationId} title={o.name} subtitle={o.description ?? undefined}
-              left={<Avatar name={o.name} size={46} uri={api.logoUrl(o.organizationId, o.logoVersion)} square />}
+            <ListItem key={o.organizationId} title={businessName(o)}
+              subtitle={[o.role === 'owner' ? null : o.ownerName, o.storeNames.join(', ')].filter(Boolean).join(' · ') || undefined}
+              left={<IconBubble icon={businessIcon(o.businessType)} tone="accent" size={46} />}
               right={<Badge label={tv('role', o.role)} tone={o.role === 'employee' ? 'info' : 'accent'} />}
               onPress={() => open(o)} />
           ))}
@@ -88,16 +82,12 @@ export default function WorkspacePicker() {
         <Card onPress={() => setCreating(true)}>
           <Row>
             <IconBubble icon="add-circle-outline" tone="accent" />
-            <Txt variant="subheading" style={{ flex: 1 }}>{t('workspace.createOwn')}</Txt>
+            <Txt variant="subheading" style={{ flex: 1 }}>{t('workspace.openStore')}</Txt>
           </Row>
         </Card>
       </Section>
 
-      <Sheet visible={creating} onClose={() => setCreating(false)} title={t('workspace.newBusiness')}>
-        <Txt muted>{t('workspace.newBusinessNote')}</Txt>
-        <Field label={t('workspace.businessName')} value={name} onChangeText={setName} placeholder="K Coffee House" autoFocus />
-        <Button title={t('workspace.create')} icon="checkmark" onPress={create} loading={busy === 'create'} disabled={!name.trim()} full />
-      </Sheet>
+      <OpenStoreSheet visible={creating} onClose={() => setCreating(false)} />
     </Screen>
   );
 }

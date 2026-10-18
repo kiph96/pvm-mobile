@@ -1,10 +1,12 @@
 import React from 'react';
 
+import { useSyncWorkspace } from '@/components/businessSwitcher';
 import { AppTabs } from '@/components/tabs';
 import { useI18n } from '@/i18n';
 import { useApprovals } from '@/state/queries';
 
 export default function OwnerTabs() {
+  useSyncWorkspace();
   const { t } = useI18n();
   const { count } = useApprovals();
   return (

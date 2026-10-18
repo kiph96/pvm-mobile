@@ -81,7 +81,6 @@ function AppStack() {
         <Stack.Screen name="store/[id]" options={{ headerShown: true, title: t('screens.store') }} />
         <Stack.Screen name="payroll" options={{ headerShown: true, title: t('screens.payroll') }} />
         <Stack.Screen name="billing" options={{ headerShown: true, title: t('screens.billing') }} />
-        <Stack.Screen name="business" options={{ headerShown: true, title: t('screens.business') }} />
         <Stack.Screen name="violations" options={{ headerShown: true, title: t('screens.violations') }} />
         <Stack.Screen name="notifications" options={{ headerShown: true, title: t('screens.notifications') }} />
         <Stack.Screen name="payslips" options={{ headerShown: true, title: t('screens.payslips') }} />

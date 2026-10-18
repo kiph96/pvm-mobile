@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import type { AssignmentView, ClockType } from '@/api/types';
 import { useBusinessSwitcher } from '@/components/businessSwitcher';
+import { businessName } from '@/components/businessType';
 import { AssignmentCard } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Badge, Button, Card, Empty, IconBubble, IconButton, Loading, Row, Screen, Section, Txt } from '@/components/ui';
@@ -42,7 +43,7 @@ export default function StaffHome() {
   const refresh = () => Promise.all([employments.refetch(), schedule.refetch(), requests.refetch(), notifications.refetch(), ...points.map((p) => p.refetch())]);
 
   return (
-    <Screen title={session?.workspace?.name} subtitle={t('staff.hello', { name: greetingName(session) })}
+    <Screen title={businessName(session?.workspace)} subtitle={t('staff.hello', { name: greetingName(session) })}
       onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>

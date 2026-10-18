@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import type { AssignmentView } from '@/api/types';
 import { useBusinessSwitcher } from '@/components/businessSwitcher';
+import { businessName } from '@/components/businessType';
 import { ShiftCard, useStores } from '@/components/domain';
 import { GettingStarted } from '@/components/gettingStarted';
 import { useAction } from '@/components/toast';
@@ -41,7 +42,7 @@ export default function OwnerHome() {
   const refresh = () => Promise.all([refetchStores(), approvals.refetch(), notifications.refetch(), plan.refetch(), ...todays.map((q) => q.refetch())]);
 
   return (
-    <Screen title={session?.workspace?.name ?? t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
+    <Screen title={businessName(session?.workspace) || t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       subtitle={t('owner.greeting', { part: t(`time.${greeting()}`), name: greetingName(session) })}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>

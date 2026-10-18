@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSignOut } from '@/state/useSignOut';
+import { businessIcon, businessName } from './businessType';
 import { LanguagePicker } from './language';
 import { ThemePicker } from './themePicker';
 import { Avatar, Badge, Card, IconBubble, ListItem, Row, Txt, type IconName, type Tone } from './ui';
@@ -25,7 +26,7 @@ export function ProfileMenu({ items }: { items: MenuItem[] }) {
           <View style={{ flex: 1, gap: 4 }}>
             <Txt variant="heading">{session.displayName}</Txt>
             <Row gap={6} wrap>
-              <Badge label={session.workspace?.name ?? ''} tone="accent" icon="business-outline" />
+              <Badge label={businessName(session.workspace)} tone="accent" icon={businessIcon(session.workspace?.businessType)} />
               {session.mode === 'demo' ? <Badge label={t('more.demo')} tone="info" /> : null}
               {session.method === 'google' ? <Badge label="Google" tone="info" icon="logo-google" />
                 : session.method === 'facebook' ? <Badge label="Facebook" tone="info" icon="logo-facebook" /> : null}

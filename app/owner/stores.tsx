@@ -3,132 +3,95 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import type { AccessKeyView } from '@/api/types';
-import { AccessKeyCard } from '@/components/accessKey';
-import { useBusinessSwitcher, useSwitchBusiness } from '@/components/businessSwitcher';
+import type { MyOrganization, StoreView } from '@/api/types';
+import { useSwitchBusiness } from '@/components/businessSwitcher';
+import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, isBusinessType, type BusinessType } from '@/components/businessType';
+import { OpenStoreSheet } from '@/components/openStore';
 import { useStores } from '@/components/domain';
-import { useAction } from '@/components/toast';
-import { Badge, Button, Card, Chip, Empty, Field, IconBubble, IconButton, Loading, Row, Screen, Section, Sheet, Txt } from '@/components/ui';
+import { Badge, Card, Empty, IconBubble, IconButton, Loading, Row, Screen, Txt } from '@/components/ui';
 import { tv, useI18n } from '@/i18n';
 import { useAllStores, useOrgKey } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
-
-const TIMEZONES = ['Asia/Ho_Chi_Minh', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Tokyo'];
+import { useTheme } from '@/theme';
 
 export default function Stores() {
   const api = useApi();
   const org = useOrgKey();
   const { t } = useI18n();
+  const { colors } = useTheme();
   const { session } = useSession();
   const { stores, isLoading, refetch, isRefetching } = useStores();
   const all = useAllStores();
-  const others = all.groups.filter((g) => !g.current && g.stores.length > 0);
   const switchTo = useSwitchBusiness();
-  const switcher = useBusinessSwitcher();
   // ?add=1 (from the dashboard checklist / Add staff) opens "New store" right away
   const { add } = useLocalSearchParams<{ add?: string }>();
   const [open, setOpen] = useState(add === '1');
+  // store rules are read inside the Business you are in, so only its stores show them
   const policies = useQueries({ queries: stores.map((s) => ({ queryKey: ['policy', org, s.id], queryFn: () => api.policy(s.id) })) });
+  const policyOf = (id: string) => policies[stores.findIndex((s) => s.id === id)]?.data;
+
+  // every store of every Business you manage, grouped by business type (the type you are in first)
+  const currentType = session?.workspace?.businessType;
+  const byType = new Map<string, { store: StoreView; business: MyOrganization; current: boolean }[]>();
+  for (const g of all.groups) {
+    const type = isBusinessType(g.business.businessType) ? g.business.businessType : 'others';
+    // closed stores are history only: not listed here
+    for (const store of g.stores.filter((s) => s.status !== 'closed')) {
+      byType.set(type, [...(byType.get(type) ?? []), { store, business: g.business, current: g.current }]);
+    }
+  }
+  const types = [...byType.keys()].sort((a, b) =>
+    Number(b === currentType) - Number(a === currentType) || BUSINESS_TYPES.indexOf(a as BusinessType) - BUSINESS_TYPES.indexOf(b as BusinessType));
+  const loading = isLoading || all.loading;
 
   return (
-    <Screen title={t('stores.title')}
-      subtitle={others.length ? t('stores.acrossBusinesses', { n: all.total, b: all.groups.filter((g) => g.stores.length).length }) : t('stores.locations', { n: stores.length })}
+    <Screen title={t('stores.title')} subtitle={t('stores.byTypeSubtitle', { n: all.total, k: types.length })}
       right={<IconButton icon="add" label={t('stores.add')} tone="primary" onPress={() => setOpen(true)} />}
       onRefresh={() => { refetch(); all.refetch(); }} refreshing={isRefetching}>
-      {/* where am I: the business these stores (and the other tabs) belong to */}
-      <Card onPress={switcher.open} style={{ marginBottom: 12 }}>
-        <Row>
-          <IconBubble icon="business-outline" tone="primary" size={38} />
-          <View style={{ flex: 1 }}>
-            <Txt variant="small" muted>{t('stores.business')}</Txt>
-            <Txt variant="subheading">{session?.workspace?.name}</Txt>
+      {loading && types.length === 0 ? <Loading /> : types.length === 0 ? (
+        <Empty icon="storefront-outline" title={t('stores.firstTitle')} message={t('stores.firstMsg')} action={t('stores.add')} onAction={() => setOpen(true)} />
+      ) : types.map((type, i) => {
+        const items = byType.get(type)!;
+        const viewing = items.some((x) => x.current);
+        return (
+          <View key={type} style={{ gap: 10, marginTop: i === 0 ? 4 : 20 }}>
+            <Row gap={10}>
+              <IconBubble icon={BUSINESS_TYPE_ICON[type as BusinessType]} tone={viewing ? 'primary' : 'accent'} size={34} />
+              <Txt variant="heading" style={{ flex: 1 }}>{t(`businessType.${type}`)}</Txt>
+              {viewing ? <Badge label={t('switcher.here')} tone="success" icon="eye-outline" /> : null}
+              <Badge label={String(items.length)} tone="neutral" icon="storefront-outline" />
+            </Row>
+            {items.map(({ store: s, business, current }) => {
+              const p = current ? policyOf(s.id) : undefined;
+              return (
+                <Card key={s.id} style={{ gap: 12, borderWidth: current ? 0 : 1, borderColor: colors.border }}
+                  onPress={async () => {
+                    // a store of another Business: move into that Business first (its stores, staff and schedule)
+                    if (!current) await switchTo(business);
+                    router.push(`/store/${s.id}`);
+                  }}>
+                  <Row>
+                    <IconBubble icon="storefront" tone={current ? 'accent' : 'neutral'} size={44} />
+                    <View style={{ flex: 1 }}>
+                      <Txt variant="subheading">{s.name}</Txt>
+                      <Txt variant="small" muted numberOfLines={2}>{s.address ?? `${s.timezone} · ${s.currency}`}</Txt>
+                    </View>
+                    <Badge label={tv('storeStatus', s.status)} tone={s.status === 'active' ? 'success' : 'neutral'} />
+                  </Row>
+                  {p ? (
+                    <Row gap={8} wrap>
+                      <Badge label={t('stores.upTo', { n: p.employeeLimit })} icon="people-outline" />
+                      <Badge label={t('stores.perShift', { min: p.minStaff, opt: p.optimalStaff, max: p.maxStaff })} icon="layers-outline" />
+                      <Badge label={p.registrationMode === 'automatic' ? t('stores.auto') : t('stores.youApprove')} icon="hand-right-outline" />
+                    </Row>
+                  ) : !current ? <Txt variant="small" muted>{t('stores.tapToSwitch')}</Txt> : null}
+                </Card>
+              );
+            })}
           </View>
-          <Badge label={t('switcher.change')} tone="primary" icon="swap-horizontal" />
-        </Row>
-      </Card>
-      <View style={{ gap: 12 }}>
-        {isLoading ? <Loading /> : stores.length === 0 ? (
-          <Empty icon="storefront-outline" title={t('stores.firstTitle')} message={t('stores.firstMsg')} action={t('stores.add')} onAction={() => setOpen(true)} />
-        ) : stores.map((s, i) => {
-          const p = policies[i]?.data;
-          return (
-            <Card key={s.id} onPress={() => router.push(`/store/${s.id}`)} style={{ gap: 12 }}>
-              <Row>
-                <IconBubble icon="storefront" tone="accent" size={46} />
-                <View style={{ flex: 1 }}>
-                  <Txt variant="subheading">{s.name}</Txt>
-                  <Txt variant="small" muted numberOfLines={2}>{s.address ?? `${s.timezone} · ${s.currency}`}</Txt>
-                </View>
-                <Badge label={tv('storeStatus', s.status)} tone={s.status === 'active' ? 'success' : 'neutral'} />
-              </Row>
-              {p ? (
-                <Row gap={8} wrap>
-                  <Badge label={t('stores.upTo', { n: p.employeeLimit })} icon="people-outline" />
-                  <Badge label={t('stores.perShift', { min: p.minStaff, opt: p.optimalStaff, max: p.maxStaff })} icon="layers-outline" />
-                  <Badge label={p.registrationMode === 'automatic' ? t('stores.auto') : t('stores.youApprove')} icon="hand-right-outline" />
-                </Row>
-              ) : null}
-            </Card>
-          );
-        })}
-      </View>
-      {others.map((g) => (
-        <Section key={g.business.organizationId} title={g.business.name}
-          action={t('switcher.open')} onAction={() => switchTo(g.business)}>
-          {g.stores.map((s) => (
-            <Card key={s.id} style={{ gap: 6 }} onPress={async () => { await switchTo(g.business); router.push(`/store/${s.id}`); }}>
-              <Row>
-                <IconBubble icon="storefront-outline" tone="neutral" size={40} />
-                <View style={{ flex: 1 }}>
-                  <Txt variant="subheading">{s.name}</Txt>
-                  <Txt variant="small" muted>{t('stores.otherBusiness', { name: g.business.name })}</Txt>
-                </View>
-                <Badge label={tv('storeStatus', s.status)} tone={s.status === 'active' ? 'success' : 'neutral'} />
-              </Row>
-            </Card>
-          ))}
-        </Section>
-      ))}
-      <AddStoreSheet visible={open} onClose={() => setOpen(false)} />
-      {switcher.sheet}
+        );
+      })}
+      <OpenStoreSheet visible={open} onClose={() => setOpen(false)} initialType={currentType} />
     </Screen>
-  );
-}
-
-function AddStoreSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const api = useApi();
-  const { t } = useI18n();
-  const [run, busy] = useAction();
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-  const [tz, setTz] = useState(TIMEZONES[0]);
-  const [key, setKey] = useState<AccessKeyView | null>(null);
-  const business = useSession().session?.workspace?.name;
-  const close = () => { setKey(null); setName(''); setAddress(''); onClose(); };
-  return (
-    <Sheet visible={visible} onClose={close} title={key ? t('stores.ready') : t('stores.newStore')}>
-      {!key ? <Txt variant="small" muted>{t('stores.addsTo', { name: business ?? '' })}</Txt> : null}
-      {key ? (
-        <>
-          <Txt muted>{t('stores.shareNote')}</Txt>
-          <AccessKeyCard accessKey={key} />
-          <Button title={t('common.done')} onPress={close} full />
-        </>
-      ) : (
-        <>
-          <Field label={t('stores.name')} value={name} onChangeText={setName} placeholder={t('stores.namePlaceholder')} autoFocus />
-          <Field label={t('storeInfo.addressOptional')} value={address} onChangeText={setAddress} maxLength={300}
-            placeholder={t('storeInfo.addressPlaceholder')} />
-          <Txt variant="small" muted>{t('stores.timezone')}</Txt>
-          <Row gap={8} wrap>{TIMEZONES.map((z) => <Chip key={z} label={z.split('/')[1].replace(/_/g, ' ')} selected={tz === z} onPress={() => setTz(z)} />)}</Row>
-          <Txt variant="small" muted>{t('stores.defaults')}</Txt>
-          <Button title={t('stores.create')} icon="checkmark" full loading={busy === 'create'} disabled={!name.trim()}
-            onPress={async () => {
-              const r = await run('create', () => api.createStore({ name: name.trim(), timezone: tz, currency: 'VND', address: address.trim() || null }), t('stores.created'));
-              if (r) setKey(r.accessKey);
-            }} />
-        </>
-      )}
-    </Sheet>
   );
 }

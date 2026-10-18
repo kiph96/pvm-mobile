@@ -12,7 +12,6 @@ export default function OwnerMore() {
   return (
     <Screen title={t('more.title')}>
       <ProfileMenu items={[
-        { title: t('business.menu'), subtitle: t('business.menuSub'), icon: 'business-outline', tone: 'accent', href: '/business' },
         { title: t('digest.menu'), subtitle: t('digest.menuSub'), icon: 'moon-outline', tone: 'primary', href: '/daily-digest' },
         { title: t('more.payroll'), subtitle: t('more.payrollSub'), icon: 'cash-outline', tone: 'success', href: '/payroll' },
         { title: t('more.violations'), subtitle: t('more.violationsSub'), icon: 'alert-circle-outline', tone: 'warning', href: '/violations', badge: violations.data?.length },

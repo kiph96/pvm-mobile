@@ -63,10 +63,8 @@ function seed() {
     { id: U(7), displayName: 'Hoang Thu Em', email: 'em.hoang@gmail.com' },
   ];
   const orgs = [
-    { id: ORG1, name: 'K Coffee House', billingTimezone: TZ, description: 'Cà phê rang xay tại chỗ · 2 cửa hàng ở TP.HCM' as string | null,
-      logoVersion: null as number | null, logo: null as string | null },
-    { id: ORG2, name: 'Lan Tea Corner', billingTimezone: TZ, description: null as string | null, logoVersion: null as number | null,
-      logo: null as string | null },
+    { id: ORG1, name: 'K Coffee House', billingTimezone: TZ, businessType: 'food_beverage' },
+    { id: ORG2, name: 'Lan Tea Corner', billingTimezone: TZ, businessType: 'food_beverage' },
   ];
   const M = (n: number) => `a1000000-0000-4000-8000-00000000000${n}`;
   const memberships: Membership[] = [
@@ -279,7 +277,9 @@ export function createMockApi(actor: () => Actor): Api {
       needed: free ? 'free' : need ? 'pro' : 'contact', neededTier: need,
       overLimit: u.stores > a.stores || (a.employees != null && u.employees > a.employees),
       tiers: Array.from({ length: PLAN.maxStores - PLAN.includedStores + 1 }, (_, i) => tier(PLAN.includedStores + i)),
-      entitlement: 'pro', appUserId: o, devPurchase: true };
+      entitlement: 'pro', appUserId: o, devPurchase: true,
+      businesses: db.memberships.filter((m) => m.userId === ownerOf(o) && m.role === 'owner').length,
+      canPurchase: member().role === 'owner' };
   };
 
   // ---- sales (same rules as the server's SalesService)
@@ -337,44 +337,15 @@ export function createMockApi(actor: () => Actor): Api {
     myOrganizations: () => wait(() => db.memberships.filter((m) => m.userId === me())
       .map((m) => {
         const o = db.orgs.find((x) => x.id === m.org)!;
-        return { organizationId: m.org, name: o.name, role: m.role, description: o.description, logoVersion: o.logoVersion };
+        return { organizationId: m.org, name: o.name, role: m.role, businessType: o.businessType,
+          ownerName: userName(ownerOf(m.org)), storeNames: db.stores.filter((st) => st.org === m.org && st.status === 'active').map((st) => st.name),
+          stores: db.stores.filter((st) => st.org === m.org && st.status === 'active').map((st) => ({ id: st.id, name: st.name, address: st.address })) };
       })),
-    createOrganization: (name, billingTimezone) => wait(() => {
-      const o = { id: id('a0'), name, billingTimezone, description: null, logoVersion: null, logo: null };
-      db.orgs.push(o);
-      db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
-      return { id: o.id, name, status: 'active', billingTimezone, myRole: 'owner' as const, stores: [] };
-    }),
     organization: () => wait(() => {
       const o = db.orgs.find((x) => x.id === org())!;
       return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s), description: o.description, logoVersion: o.logoVersion };
+        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s), businessType: o.businessType };
     }),
-    updateOrganization: (req) => wait(() => {
-      manager();
-      const o = db.orgs.find((x) => x.id === org())!;
-      if (!req.name.trim()) fail(400, t('errors.validation_failed'), 'validation_failed');
-      Object.assign(o, { name: req.name.trim(), description: req.description?.trim() || null });
-      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: [], description: o.description, logoVersion: o.logoVersion };
-    }),
-    uploadLogo: (req) => wait(() => {
-      manager();
-      const o = db.orgs.find((x) => x.id === org())!;
-      if (req.data.length > 1_400_000) fail(422, t('errors.logo_too_large'), 'logo_too_large');
-      // demo: the logo lives in memory as a data URI
-      Object.assign(o, { logo: `data:${req.contentType};base64,${req.data}`, logoVersion: (o.logoVersion ?? 0) + 1 });
-      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: [], description: o.description, logoVersion: o.logoVersion };
-    }),
-    removeLogo: () => wait(() => {
-      manager();
-      const o = db.orgs.find((x) => x.id === org())!;
-      Object.assign(o, { logo: null, logoVersion: null });
-      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: [], description: o.description, logoVersion: null };
-    }),
-    logoUrl: (organizationId, version) => (version ? db.orgs.find((x) => x.id === organizationId)?.logo ?? null : null),
     stores: () => wait(() => {
       member();
       // like the server: staff only see the stores they work at
@@ -390,9 +361,55 @@ export function createMockApi(actor: () => Actor): Api {
       const { org: _o, ...view } = s;
       return view;
     }),
+    closeStore: (storeId) => wait(() => {
+      // like the server: owner only; upcoming shifts cancelled and staff employment there ended
+      if (member().role !== 'owner') fail(403, t('mock.ownersOnly'));
+      const s = db.stores.find((x) => x.id === storeId && x.org === org()) ?? fail(404, t('mock.notFound'));
+      if (s.status !== 'active') fail(409, t('errors.store_not_active'), 'store_not_active');
+      Object.assign(s, { status: 'closed' });
+      db.employments.filter((e) => e.storeId === storeId && e.status !== 'ended').forEach((e) => Object.assign(e, { status: 'ended', endedAt: nowIso() }));
+      const { org: _o, ...view } = s;
+      return view;
+    }),
+    moveStore: (storeId, businessType) => wait(() => {
+      // like the server: the store itself moves to the owner's Business of that type
+      if (member().role !== 'owner') fail(403, t('mock.ownersOnly'));
+      const s = db.stores.find((x) => x.id === storeId && x.org === org()) ?? fail(404, t('mock.notFound'));
+      if (db.orgs.find((x) => x.id === org())?.businessType === businessType) fail(400, t('errors.validation_failed'), 'same_business_type');
+      let o = db.orgs.find((x) => x.businessType === businessType
+        && db.memberships.some((m) => m.org === x.id && m.userId === me() && m.role === 'owner'));
+      const created = !o;
+      if (!o) {
+        o = { id: id('a0'), name: businessType, billingTimezone: s.timezone, businessType };
+        db.orgs.push(o);
+        db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
+      }
+      s.org = o.id;
+      const { org: _o, ...view } = s;
+      return { organizationId: o.id, businessType, newBusiness: created, store: view };
+    }),
     storesOf: (organizationId) => wait(() => {
       if (!db.memberships.some((m) => m.org === organizationId && m.userId === me())) fail(403, t('mock.ownersOnly'));
       return db.stores.filter((s) => s.org === organizationId).map(({ org: _o, ...s }) => s);
+    }),
+    openStore: (req) => wait(() => {
+      // like the server: the owner's Business for this type, created with their first store of that type
+      let o = db.orgs.find((x) => x.businessType === req.businessType
+        && db.memberships.some((m) => m.org === x.id && m.userId === me() && m.role === 'owner'));
+      const created = !o;
+      if (!o) {
+        o = { id: id('a0'), name: req.businessType, billingTimezone: req.timezone, businessType: req.businessType };
+        db.orgs.push(o);
+        db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
+      }
+      requireRoom(o.id, 1, 0);
+      const store = { id: id('b0'), org: o.id, name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso(),
+        address: req.address?.trim() || null };
+      db.stores.push(store);
+      db.policies[store.id] = { ...db.policies[D1], id: id('c2'), version: 1, effectiveFrom: nowIso() };
+      const { org: _o, ...view } = store;
+      return { organizationId: o.id, businessType: o.businessType, newBusiness: created, store: view, policy: db.policies[store.id],
+        accessKey: newKey(store.id, 1) };
     }),
     createStore: (req) => wait(() => {
       manager();

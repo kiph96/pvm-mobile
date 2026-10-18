@@ -51,6 +51,8 @@ function CurrentPlan({ p }: { p: PlanView }) {
               {t('plan.usage', { stores: p.stores, storeLimit: p.storeLimit, employees: p.employees })}
               {p.employeeLimit != null ? ` / ${p.employeeLimit}` : ` · ${t('plan.unlimitedStaff')}`}
             </Txt>
+            {/* the plan is per owner: say so, so splitting stores into Businesses is not a surprise */}
+            <Txt variant="small" muted>{t('plan.acrossBusinesses', { n: p.businesses })}</Txt>
           </View>
           {s?.environment === 'sandbox' ? <Badge label={t('plan.test')} tone="info" /> : null}
         </Row>
@@ -149,7 +151,9 @@ function Choose({ p }: { p: PlanView }) {
             {n < p.stores ? <Txt variant="small" color={colors.warning}>{t('plan.tooSmall', { n: p.stores })}</Txt> : null}
           </>
         ) : null}
-        {canBuy ? (
+        {!p.canPurchase ? (
+          <Txt variant="small" muted>{t('plan.ownerOnly')}</Txt>
+        ) : canBuy ? (
           <>
             <Button full icon={current ? 'checkmark-circle' : 'card-outline'} loading={busy === 'buy'} disabled={current || !tier}
               title={current ? t('plan.yourPlan') : p.plan === 'pro' ? t('plan.switch') : t('plan.subscribe')} onPress={purchase} />

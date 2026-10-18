@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 
+import { useSyncWorkspace } from '@/components/businessSwitcher';
 import { AppTabs } from '@/components/tabs';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
 
 export default function StaffTabs() {
+  useSyncWorkspace();
   const { t } = useI18n();
   const api = useApi();
   const org = useOrgKey();

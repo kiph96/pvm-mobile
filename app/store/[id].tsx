@@ -1,18 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import type { AccessKeyView, PolicyRules, PolicyView, StoreView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
+import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessIcon, businessName, type BusinessType } from '@/components/businessType';
 import { codeLabel, useStores } from '@/components/domain';
 import { PayRulesEditor } from '@/components/payRules';
 import { useAction } from '@/components/toast';
 import { Badge, Button, Card, Chip, Field, IconBubble, ListItem, Loading, Row, Screen, Section, Sheet, Stepper, Toggle, Txt, confirm } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
-import { useApi } from '@/state/session';
+import { useApi, useSession } from '@/state/session';
 import { useTheme } from '@/theme';
 import { isoWeekdays, money, pct } from '@/utils/format';
 
@@ -27,6 +28,9 @@ export default function StoreSettings() {
   const [key, setKey] = useState<AccessKeyView | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
+  const { session } = useSession();
+  const ws = session?.workspace;
   const { colors } = useTheme();
   const policy = useQuery({ queryKey: ['policy', org, id], queryFn: () => api.policy(id) });
   const templates = useQuery({ queryKey: ['templates', org, id], queryFn: () => api.templates(id) });
@@ -56,6 +60,11 @@ export default function StoreSettings() {
             <Row gap={8} style={{ alignItems: 'flex-start' }}>
               <Ionicons name="location-outline" size={18} color={store.address ? colors.text : colors.textMuted} />
               <Txt variant="small" muted={!store.address} style={{ flex: 1 }}>{store.address ?? t('storeInfo.noAddress')}</Txt>
+            </Row>
+            <Row gap={8}>
+              <Ionicons name={businessIcon(ws?.businessType)} size={18} color={colors.text} />
+              <Txt variant="small" style={{ flex: 1 }}>{t('storeInfo.type')}: {businessName(ws)}</Txt>
+              {ws?.role === 'owner' ? <Button small variant="ghost" icon="swap-horizontal" title={t('storeInfo.changeType')} onPress={() => setTypeOpen(true)} /> : null}
             </Row>
           </Card>
         </Section>
@@ -88,8 +97,23 @@ export default function StoreSettings() {
       {policy.data ? <PayRulesEditor storeId={id} policy={policy.data} /> : null}
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
       {store ? <EditStoreSheet visible={editOpen} onClose={() => setEditOpen(false)} store={store} /> : null}
+      {store ? <ChangeTypeSheet visible={typeOpen} onClose={() => setTypeOpen(false)} store={store} current={ws?.businessType} /> : null}
       <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id}
         autoDays={autoSchedule(policy.data).on ? autoSchedule(policy.data).days : null} />
+
+      {store && ws?.role === 'owner' ? (
+        <Section title={t('closeStore.title')}>
+          <Card style={{ gap: 12 }}>
+            <Txt variant="small" muted>{t('closeStore.note')}</Txt>
+            <Button title={t('closeStore.button')} icon="lock-closed-outline" variant="danger" loading={busy === 'close'}
+              onPress={async () => {
+                if (!await confirm(t('closeStore.confirmTitle', { store: store.name }), t('closeStore.confirmMsg'), t('closeStore.confirm'), true)) return;
+                const r = await run('close', () => api.closeStore(store.id), t('closeStore.done', { store: store.name }));
+                if (r) router.replace('/owner/stores');
+              }} />
+          </Card>
+        </Section>
+      ) : null}
     </Screen>
   );
 }
@@ -225,6 +249,44 @@ function TemplateSheet({ visible, onClose, storeId, autoDays }: { visible: boole
             onClose();
           }
         }} />
+    </Sheet>
+  );
+}
+
+/**
+ * Owner changes the store's business type: it moves to their Business of that type (created if needed) with
+ * its staff, wages, rules, templates and upcoming shifts. Past shifts and pay stay in the old Business.
+ */
+function ChangeTypeSheet({ visible, onClose, store, current }: { visible: boolean; onClose: () => void; store: StoreView; current?: string | null }) {
+  const api = useApi();
+  const { t } = useI18n();
+  const { chooseWorkspace } = useSession();
+  const [run, busy] = useAction();
+  const [type, setType] = useState<BusinessType | null>(null);
+  useEffect(() => {
+    if (visible) setType(null);
+  }, [visible]);
+  const move = async () => {
+    if (!type) return;
+    const typeName = t(`businessType.${type}`);
+    if (!await confirm(t('storeInfo.moveTitle', { type: typeName }), t('storeInfo.moveMsg', { store: store.name, type: typeName }), t('storeInfo.moveConfirm'))) return;
+    const r = await run('move', () => api.moveStore(store.id, type), t('storeInfo.moved', { type: typeName }));
+    if (!r) return;
+    onClose();
+    // follow the store into its new Business
+    await chooseWorkspace({ id: r.organizationId, name: businessName(r), role: 'owner', businessType: r.businessType });
+    router.replace(`/store/${r.store.id}`);
+  };
+  return (
+    <Sheet visible={visible} onClose={onClose} title={t('storeInfo.changeTypeTitle')}>
+      <Txt variant="small" muted>{t('storeInfo.changeTypeNote')}</Txt>
+      <Row gap={8} wrap>
+        {BUSINESS_TYPES.map((bt) => (
+          <Chip key={bt} icon={BUSINESS_TYPE_ICON[bt]} label={t(`businessType.${bt}`)} selected={type === bt || (!type && current === bt)}
+            onPress={() => { if (bt !== current) setType(bt); }} />
+        ))}
+      </Row>
+      <Button title={t('storeInfo.moveButton')} icon="swap-horizontal" full loading={busy === 'move'} disabled={!type} onPress={move} />
     </Sheet>
   );
 }

@@ -20,6 +20,8 @@ export interface Workspace {
   id: string;
   name: string;
   role: OrgRole;
+  /** system business type (the header shows its translated name) */
+  businessType?: string;
 }
 
 export interface Session {
@@ -44,6 +46,8 @@ interface SessionContextValue {
   /** Server sign-in with tokens returned by /api/auth/*. */
   signInWithTokens: (serverUrl: string, method: AuthMethod, tokens: AuthTokens) => Promise<void>;
   chooseWorkspace: (w: Workspace | null) => Promise<void>;
+  /** Refresh the saved Business (name, type) without leaving it or dropping cached data. */
+  refreshWorkspace: (w: Workspace) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -149,6 +153,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     chooseWorkspace: async (w) => {
       if (sessionRef.current) await persist({ ...sessionRef.current, workspace: w });
+    },
+    refreshWorkspace: async (w) => {
+      const cur = sessionRef.current;
+      if (!cur?.workspace || cur.workspace.id !== w.id) return;
+      const next = { ...cur, workspace: w };
+      setSession(next);
+      sessionRef.current = next;
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // storage unavailable: fine for this run
+      }
     },
     signOut,
   }), [ready, session, api, persist, setTokens, signOut]);

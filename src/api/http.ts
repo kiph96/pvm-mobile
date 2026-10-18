@@ -119,20 +119,16 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.UserView>('POST', '/users', { displayName, contactEmail: contactEmail || null }),
     me: () => call<T.UserView>('GET', '/me'),
     myOrganizations: () => call<T.MyOrganization[]>('GET', '/me/organizations'),
-    createOrganization: (name: string, billingTimezone: string) =>
-      call<T.OrganizationView>('POST', '/organizations', { name, billingTimezone }),
     organization: () => call<T.OrganizationView>('GET', '/organization'),
-    updateOrganization: (req: T.UpdateOrganization) => call<T.OrganizationView>('PUT', '/organization', req),
-    uploadLogo: (req: T.UploadLogo) => call<T.OrganizationView>('PUT', '/organization/logo', req),
-    removeLogo: () => call<T.OrganizationView>('DELETE', '/organization/logo'),
-    /** Image URL of a Business logo (public; the version makes it cache-safe), or null when there is none. */
-    logoUrl: (organizationId: string, version?: number | null): string | null =>
-      version ? `${root}/api/public/organizations/${organizationId}/logo?v=${version}` : null,
     stores: () => call<T.StoreView[]>('GET', '/stores'),
     /** Stores of any business I belong to, not only the one I am working in. */
     storesOf: (organizationId: string) => call<T.StoreView[]>('GET', '/stores', undefined, { 'X-Organization-Id': organizationId }),
     createStore: (req: T.CreateStore) => call<T.StoreCreated>('POST', '/stores', req),
+    /** Owner opens a store of a business type (no Business needed beforehand). */
+    openStore: (req: T.OpenStore) => call<T.StoreOpened>('POST', '/me/stores', req),
     updateStore: (storeId: string, req: T.UpdateStore) => call<T.StoreView>('PUT', `/stores/${storeId}`, req),
+    closeStore: (storeId: string) => call<T.StoreView>('POST', `/stores/${storeId}/close`),
+    moveStore: (storeId: string, businessType: string) => call<T.StoreMoved>('POST', `/stores/${storeId}/move`, { businessType }),
     rotateAccessKey: (storeId: string) => call<T.AccessKeyView>('POST', `/stores/${storeId}/access-key/rotate`),
     policy: (storeId: string) => call<T.PolicyView>('GET', `/stores/${storeId}/policy`),
     updatePolicy: (storeId: string, req: T.UpdatePolicy) => call<T.PolicyView>('PUT', `/stores/${storeId}/policy`, req),
