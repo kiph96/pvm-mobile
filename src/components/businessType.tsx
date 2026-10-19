@@ -1,7 +1,7 @@
 import { t } from '@/i18n';
 import type { IconName } from './ui';
 
-/** The six business types the system defines (owners do not create or name Businesses). */
+/** The six business types the system defines; every store has one. */
 export const BUSINESS_TYPES = ['food_beverage', 'retail_fashion', 'education', 'finance_services', 'manufacturing', 'others'] as const;
 export type BusinessType = (typeof BUSINESS_TYPES)[number];
 
@@ -16,10 +16,9 @@ export const BUSINESS_TYPE_ICON: Record<BusinessType, IconName> = {
 
 export const isBusinessType = (v: unknown): v is BusinessType => BUSINESS_TYPES.includes(v as BusinessType);
 
-/** Display name of a Business: its translated type ("Ẩm thực (F&B)"), falling back to the stored name. */
-export function businessName(b: { businessType?: string | null; name?: string | null } | null | undefined) {
-  if (!b) return '';
-  return isBusinessType(b.businessType) ? t(`businessType.${b.businessType}`) : b.name ?? '';
+/** Translated name of a business type ("Ẩm thực (F&B)"). */
+export function typeName(type: string | null | undefined) {
+  return isBusinessType(type) ? t(`businessType.${type}`) : '';
 }
 
 export function businessIcon(type: string | null | undefined): IconName {

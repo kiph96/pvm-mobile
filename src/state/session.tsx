@@ -20,8 +20,6 @@ export interface Workspace {
   id: string;
   name: string;
   role: OrgRole;
-  /** system business type (the header shows its translated name) */
-  businessType?: string;
 }
 
 export interface Session {
@@ -46,7 +44,7 @@ interface SessionContextValue {
   /** Server sign-in with tokens returned by /api/auth/*. */
   signInWithTokens: (serverUrl: string, method: AuthMethod, tokens: AuthTokens) => Promise<void>;
   chooseWorkspace: (w: Workspace | null) => Promise<void>;
-  /** Refresh the saved Business (name, type) without leaving it or dropping cached data. */
+  /** Refresh the saved account (owner name, role) without leaving it or dropping cached data. */
   refreshWorkspace: (w: Workspace) => Promise<void>;
   signOut: () => Promise<void>;
 }

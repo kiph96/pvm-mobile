@@ -13,7 +13,7 @@ import { useTheme } from '@/theme';
 import { errorMessage, fullDate, money } from '@/utils/format';
 
 /**
- * The business's app plan: free (1 store, up to 3 people) or Pro for N stores, bought in the app
+ * The owner's app plan: free (1 store, up to 3 people) or Pro for N stores, bought in the app
  * through the App Store / Google Play. Prices shown come from the store when it is reachable.
  */
 export default function Billing() {
@@ -51,8 +51,6 @@ function CurrentPlan({ p }: { p: PlanView }) {
               {t('plan.usage', { stores: p.stores, storeLimit: p.storeLimit, employees: p.employees })}
               {p.employeeLimit != null ? ` / ${p.employeeLimit}` : ` · ${t('plan.unlimitedStaff')}`}
             </Txt>
-            {/* the plan is per owner: say so, so splitting stores into Businesses is not a surprise */}
-            <Txt variant="small" muted>{t('plan.acrossBusinesses', { n: p.businesses })}</Txt>
           </View>
           {s?.environment === 'sandbox' ? <Badge label={t('plan.test')} tone="info" /> : null}
         </Row>

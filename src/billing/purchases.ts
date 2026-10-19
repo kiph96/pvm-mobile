@@ -5,8 +5,7 @@ import RNPurchases, { type PurchasesStoreProduct } from 'react-native-purchases'
 /**
  * App Store / Google Play subscriptions through RevenueCat (react-native-purchases).
  *
- * The RevenueCat app user id is the business (organization) id, so a subscription belongs to the
- * business, not to the person who paid. Each tier is its own subscription product, pvm_pro_<stores>,
+ * The RevenueCat app user id is the owner's user id: one subscription covers all their stores. Each tier is its own subscription product, pvm_pro_<stores>,
  * all in one subscription group, so changing the number of stores is an upgrade/downgrade.
  * Purchases only work in a development or store build on a phone; on the web and in Expo Go
  * {@link purchasesAvailable} is false.

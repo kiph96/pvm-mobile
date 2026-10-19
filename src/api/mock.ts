@@ -1,6 +1,6 @@
 // In-memory implementation of the API used by "Explore demo" mode.
 // It mirrors the backend rules closely enough to try every screen offline:
-// two businesses (K Coffee House, Lan Tea Corner), three stores, shifts
+// two owners (K Coffee, Lan Tea), three stores, shifts
 // generated around today, requests, swaps, attendance, points and payroll.
 import { t } from '@/i18n';
 import { DEFAULT_PAY, estimatePay, payRulesOf, type WageBasis } from '@/utils/pay';
@@ -63,8 +63,8 @@ function seed() {
     { id: U(7), displayName: 'Hoang Thu Em', email: 'em.hoang@gmail.com' },
   ];
   const orgs = [
-    { id: ORG1, name: 'K Coffee House', billingTimezone: TZ, businessType: 'food_beverage' },
-    { id: ORG2, name: 'Lan Tea Corner', billingTimezone: TZ, businessType: 'food_beverage' },
+    { id: ORG1, name: 'Nguyen Van Minh', billingTimezone: TZ },
+    { id: ORG2, name: 'Tran Thi Lan', billingTimezone: TZ },
   ];
   const M = (n: number) => `a1000000-0000-4000-8000-00000000000${n}`;
   const memberships: Membership[] = [
@@ -77,9 +77,9 @@ function seed() {
     { id: M(7), org: ORG2, userId: U(6), role: 'employee' },
   ];
   const stores: (T.StoreView & { org: string })[] = [
-    { id: D1, org: ORG1, name: 'K Coffee - District 1', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2025-12-15T06:00:00+07:00', address: '12 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM' },
-    { id: D3, org: ORG1, name: 'K Coffee - District 3', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-02-20T06:00:00+07:00', address: '45 Võ Văn Tần, Phường 6, Quận 3, TP.HCM' },
-    { id: TD, org: ORG2, name: 'Lan Tea - Thu Duc', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-01-15T06:00:00+07:00', address: null },
+    { id: D1, org: ORG1, name: 'K Coffee - District 1', businessType: 'food_beverage', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2025-12-15T06:00:00+07:00', address: '12 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM' },
+    { id: D3, org: ORG1, name: 'K Coffee - District 3', businessType: 'food_beverage', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-02-20T06:00:00+07:00', address: '45 Võ Văn Tần, Phường 6, Quận 3, TP.HCM' },
+    { id: TD, org: ORG2, name: 'Lan Tea - Thu Duc', businessType: 'food_beverage', timezone: TZ, currency: 'VND', status: 'active', openedAt: '2026-01-15T06:00:00+07:00', address: null },
   ];
   const E = (n: number) => `b1000000-0000-4000-8000-00000000000${n}`;
   const employments: Employment[] = [
@@ -278,7 +278,6 @@ export function createMockApi(actor: () => Actor): Api {
       overLimit: u.stores > a.stores || (a.employees != null && u.employees > a.employees),
       tiers: Array.from({ length: PLAN.maxStores - PLAN.includedStores + 1 }, (_, i) => tier(PLAN.includedStores + i)),
       entitlement: 'pro', appUserId: o, devPurchase: true,
-      businesses: db.memberships.filter((m) => m.userId === ownerOf(o) && m.role === 'owner').length,
       canPurchase: member().role === 'owner' };
   };
 
@@ -335,16 +334,13 @@ export function createMockApi(actor: () => Actor): Api {
       return { id: u.id, displayName: u.displayName, status: 'active' };
     }),
     myOrganizations: () => wait(() => db.memberships.filter((m) => m.userId === me())
-      .map((m) => {
-        const o = db.orgs.find((x) => x.id === m.org)!;
-        return { organizationId: m.org, name: o.name, role: m.role, businessType: o.businessType,
-          ownerName: userName(ownerOf(m.org)), storeNames: db.stores.filter((st) => st.org === m.org && st.status === 'active').map((st) => st.name),
-          stores: db.stores.filter((st) => st.org === m.org && st.status === 'active').map((st) => ({ id: st.id, name: st.name, address: st.address })) };
-      })),
+      .map((m) => ({ organizationId: m.org, role: m.role, ownerName: userName(ownerOf(m.org)),
+        stores: db.stores.filter((st) => st.org === m.org && st.status === 'active')
+          .map((st) => ({ id: st.id, name: st.name, businessType: st.businessType, address: st.address })) }))),
     organization: () => wait(() => {
       const o = db.orgs.find((x) => x.id === org())!;
-      return { id: o.id, name: o.name, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
-        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s), businessType: o.businessType };
+      return { id: o.id, status: 'active', billingTimezone: o.billingTimezone, myRole: member().role,
+        stores: db.stores.filter((s) => s.org === o.id).map(({ org: _o, ...s }) => s) };
     }),
     stores: () => wait(() => {
       member();
@@ -357,7 +353,7 @@ export function createMockApi(actor: () => Actor): Api {
       manager();
       const s = db.stores.find((x) => x.id === storeId && x.org === org()) ?? fail(404, t('mock.notFound'));
       if (!req.name.trim()) fail(400, t('errors.validation_failed'), 'validation_failed');
-      Object.assign(s, { name: req.name.trim(), address: req.address?.trim() || null });
+      Object.assign(s, { name: req.name.trim(), address: req.address?.trim() || null, businessType: req.businessType });
       const { org: _o, ...view } = s;
       return view;
     }),
@@ -371,56 +367,21 @@ export function createMockApi(actor: () => Actor): Api {
       const { org: _o, ...view } = s;
       return view;
     }),
-    moveStore: (storeId, businessType) => wait(() => {
-      // like the server: the store itself moves to the owner's Business of that type
-      if (member().role !== 'owner') fail(403, t('mock.ownersOnly'));
-      const s = db.stores.find((x) => x.id === storeId && x.org === org()) ?? fail(404, t('mock.notFound'));
-      if (db.orgs.find((x) => x.id === org())?.businessType === businessType) fail(400, t('errors.validation_failed'), 'same_business_type');
-      let o = db.orgs.find((x) => x.businessType === businessType
-        && db.memberships.some((m) => m.org === x.id && m.userId === me() && m.role === 'owner'));
-      const created = !o;
-      if (!o) {
-        o = { id: id('a0'), name: businessType, billingTimezone: s.timezone, businessType };
-        db.orgs.push(o);
-        db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
-      }
-      s.org = o.id;
-      const { org: _o, ...view } = s;
-      return { organizationId: o.id, businessType, newBusiness: created, store: view };
-    }),
-    storesOf: (organizationId) => wait(() => {
-      if (!db.memberships.some((m) => m.org === organizationId && m.userId === me())) fail(403, t('mock.ownersOnly'));
-      return db.stores.filter((s) => s.org === organizationId).map(({ org: _o, ...s }) => s);
-    }),
     openStore: (req) => wait(() => {
-      // like the server: the owner's Business for this type, created with their first store of that type
-      let o = db.orgs.find((x) => x.businessType === req.businessType
-        && db.memberships.some((m) => m.org === x.id && m.userId === me() && m.role === 'owner'));
-      const created = !o;
+      // like the server: the owner's account, created with their first store
+      let o = db.orgs.find((x) => db.memberships.some((m) => m.org === x.id && m.userId === me() && m.role === 'owner'));
       if (!o) {
-        o = { id: id('a0'), name: req.businessType, billingTimezone: req.timezone, businessType: req.businessType };
+        o = { id: id('a0'), name: userName(me()) ?? '', billingTimezone: req.timezone };
         db.orgs.push(o);
         db.memberships.push({ id: id('a1'), org: o.id, userId: me(), role: 'owner' });
       }
       requireRoom(o.id, 1, 0);
-      const store = { id: id('b0'), org: o.id, name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso(),
-        address: req.address?.trim() || null };
+      const store = { id: id('b0'), org: o.id, name: req.name, businessType: req.businessType, timezone: req.timezone, currency: req.currency,
+        status: 'active', openedAt: nowIso(), address: req.address?.trim() || null };
       db.stores.push(store);
       db.policies[store.id] = { ...db.policies[D1], id: id('c2'), version: 1, effectiveFrom: nowIso() };
       const { org: _o, ...view } = store;
-      return { organizationId: o.id, businessType: o.businessType, newBusiness: created, store: view, policy: db.policies[store.id],
-        accessKey: newKey(store.id, 1) };
-    }),
-    createStore: (req) => wait(() => {
-      manager();
-      requireRoom(org(), 1, 0);
-      const store = { id: id('b0'), org: org(), name: req.name, timezone: req.timezone, currency: req.currency, status: 'active', openedAt: nowIso(),
-        address: req.address?.trim() || null };
-      db.stores.push(store);
-      db.policies[store.id] = { ...db.policies[D1], id: id('c2'), version: 1, effectiveFrom: nowIso() };
-      const key = newKey(store.id, 1);
-      const { org: _o, ...view } = store;
-      return { store: view, policy: db.policies[store.id], accessKey: key };
+      return { organizationId: o.id, store: view, policy: db.policies[store.id], accessKey: newKey(store.id, 1) };
     }),
     rotateAccessKey: (storeId) => wait(() => {
       manager();
@@ -874,25 +835,6 @@ export function createMockApi(actor: () => Actor): Api {
       const n = Math.max(PLAN.includedStores, storeQuota);
       db.plans[org()] = { productId: `pvm_pro_${n}`, storeQuota: n, expiresAt: new Date(Date.now() + 30 * DAY).toISOString() };
       return planView(org());
-    }),
-    estimate: () => wait(() => {
-      manager();
-      const stores = db.stores.filter((s) => s.org === org() && s.status === 'active').length;
-      const people = new Set(db.employments.filter((e) => e.org === org() && e.status === 'active').map((e) => e.membershipId)).size;
-      return { planCode: 'standard', currency: 'VND', activeStores: stores, activeEmployees: people, baseFee: 99000,
-        storeFees: stores * 49000, employeeFees: people * 15000, total: 99000 + stores * 49000 + people * 15000 };
-    }),
-    invoices: () => wait(() => {
-      manager();
-      const month = localDate(-30).slice(0, 7);
-      return [{ id: id('25'), invoiceNumber: `PVM-${month}`, kind: 'charge', currency: 'VND', periodStart: `${month}-01T00:00:00+07:00`,
-        periodEnd: `${localDate(0).slice(0, 7)}-01T00:00:00+07:00`, peakStores: 2, peakEmployees: 4, total: 257000,
-        issuedAt: `${localDate(0).slice(0, 7)}-01T09:00:00+07:00`, dueAt: `${localDate(0).slice(0, 7)}-15T23:59:00+07:00`,
-        lines: [
-          { code: 'base', quantity: 1, unitAmount: 99000, amount: 99000, description: t('mock.plan') },
-          { code: 'stores', quantity: 2, unitAmount: 49000, amount: 98000, description: t('mock.planStores') },
-          { code: 'employees', quantity: 4, unitAmount: 15000, amount: 60000, description: t('mock.planPeople') },
-        ] }];
     }),
     notifications: () => wait(() => db.notices.filter((n) => n.org === org() && n.to === me())
       .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title(), payload: {}, availableAt: n.availableAt, deliveredAt: n.deliveredAt }))),

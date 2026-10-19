@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 
 import type { MyOrganization } from '@/api/types';
-import { businessIcon, businessName } from '@/components/businessType';
+import { accountName } from '@/components/accountSwitcher';
 import { OpenStoreSheet } from '@/components/openStore';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, IconBubble, IconButton, ListItem, Loading, Row, Screen, Section, Sheet, Txt } from '@/components/ui';
@@ -12,7 +12,11 @@ import { greetingName, useApi, useSession } from '@/state/session';
 import { useSignOut } from '@/state/useSignOut';
 import { ago } from '@/utils/format';
 
-/** Choose which business to work in (an employee can work for several). */
+/**
+ * Choose where to work: your own stores, or an owner you work for (someone may work for several).
+ * With nothing chosen yet and only one place to work, it opens that place straight away; opened from inside
+ * the app it keeps the current place and offers a way back to it.
+ */
 export default function WorkspacePicker() {
   const api = useApi();
   const { t } = useI18n();
@@ -22,7 +26,7 @@ export default function WorkspacePicker() {
   const [creating, setCreating] = useState(false);
   const qc = useQueryClient();
   const orgs = useQuery({ queryKey: ['my-orgs', session?.userId], queryFn: api.myOrganizations, enabled: !!session });
-  // join requests not yet turned into a business here; poll while one is waiting so approval shows up by itself
+  // join requests not yet turned into an account here; poll while one is waiting so approval shows up by itself
   const requests = useQuery({
     queryKey: ['my-enrollments', session?.userId], queryFn: api.myEnrollments, enabled: !!session,
     refetchInterval: (q) => (q.state.data ?? []).some((r) => r.status === 'pending') ? 15_000 : false,
@@ -38,25 +42,47 @@ export default function WorkspacePicker() {
   const refresh = () => { orgs.refetch(); requests.refetch(); };
 
   const open = async (o: MyOrganization) => {
-    await chooseWorkspace({ id: o.organizationId, name: businessName(o), role: o.role, businessType: o.businessType });
+    await chooseWorkspace({ id: o.organizationId, name: o.ownerName ?? '', role: o.role });
     router.replace(o.role === 'owner' || o.role === 'admin' ? '/owner' : '/staff');
   };
+
+  // the place you were working in when you came here from inside the app
+  const current = session?.workspace ?? null;
+  const back = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(current?.role === 'owner' || current?.role === 'admin' ? '/owner' : '/staff');
+  };
+  // nothing chosen yet and only one place to work: go straight in (most owners never see this screen)
+  const only = !current && orgs.data?.length === 1 ? orgs.data[0] : null;
+  const entered = useRef(false);
+  useEffect(() => {
+    if (only && !entered.current) {
+      entered.current = true;
+      open(only);
+    }
+  }, [only]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (only) return <Screen><Loading /></Screen>;
 
 
   return (
     <Screen title={t('workspace.hello', { name: greetingName(session) })} subtitle={t('workspace.where')}
       right={<IconButton icon="log-out-outline" label={t('workspace.signOut')} onPress={signOut} />}
       onRefresh={refresh} refreshing={orgs.isRefetching || requests.isRefetching}>
+      {current ? (
+        <Button small variant="ghost" icon="arrow-back" title={t('workspace.back', { name: accountName(current) })}
+          onPress={back} style={{ alignSelf: 'flex-start' }} />
+      ) : null}
       {!orgs.data && !orgs.error ? <Loading /> : orgs.error ? <ErrorState error={orgs.error} onRetry={orgs.refetch} /> : (
         <>
           {orgs.data.length === 0 && shownRequests.length === 0 ? (
             <Empty icon="storefront-outline" title={t('workspace.noneTitle')} message={t('workspace.noneMsg')} />
           ) : orgs.data.map((o) => (
-            <ListItem key={o.organizationId} title={businessName(o)}
-              subtitle={[o.role === 'owner' ? null : o.ownerName, o.storeNames.join(', ')].filter(Boolean).join(' · ') || undefined}
-              left={<IconBubble icon={businessIcon(o.businessType)} tone="accent" size={46} />}
-              right={<Badge label={tv('role', o.role)} tone={o.role === 'employee' ? 'info' : 'accent'} />}
-              onPress={() => open(o)} />
+            <ListItem key={o.organizationId} title={accountName(o)}
+              subtitle={o.stores.map((s) => s.name).join(', ') || undefined}
+              left={<IconBubble icon={o.role === 'owner' ? 'storefront' : 'briefcase-outline'} tone="accent" size={46} />}
+              right={o.organizationId === current?.id ? <Badge label={t('switcher.here')} tone="success" icon="checkmark" />
+                : <Badge label={tv('role', o.role)} tone={o.role === 'employee' ? 'info' : 'accent'} />}
+              onPress={() => (o.organizationId === current?.id ? back() : open(o))} />
           ))}
         </>
       )}

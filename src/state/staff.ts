@@ -4,7 +4,7 @@ import { addDays, today } from '@/utils/format';
 import { useOrgKey } from './queries';
 import { useApi } from './session';
 
-/** The signed-in employee's stores (employments) in the current business. */
+/** The signed-in employee's stores (employments) in the current account. */
 export function useMyEmployments() {
   const api = useApi();
   const org = useOrgKey();

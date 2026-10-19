@@ -9,34 +9,26 @@ export type LocalTime = string; // HH:mm[:ss]
 // ---------------------------------------------------------------- organization
 export interface UserView { id: UUID; displayName: string; status: string }
 export type OrgRole = 'owner' | 'admin' | 'payroll' | 'employee';
+/** An account the user belongs to: their own (role owner) or an owner they work for. */
 export interface MyOrganization {
-  organizationId: UUID; name: string; role: OrgRole;
-  description?: string | null;
-  logoVersion?: number | null;
-  /** system business type code; the app shows its translated name (see businessName) */
-  businessType: string;
-  /** owner of this Business (staff may work for several owners of the same type) */
+  organizationId: UUID; role: OrgRole;
+  /** who owns it (shown to staff who work for several owners) */
   ownerName: string | null;
-  storeNames: string[];
-  /** its active stores, to show and open them directly */
-  stores: { id: UUID; name: string; address?: string | null }[];
+  /** its active stores, to list them and open one directly */
+  stores: { id: UUID; name: string; businessType: string; address?: string | null }[];
 }
-/** Open a store of a system business type: the owner's Business for that type is found or created. */
+/** Open a store of a system business type; the owner's account is created with their first store. */
 export interface OpenStore { businessType: string; name: string; timezone: string; currency: string; address?: string | null }
-export interface StoreOpened {
-  organizationId: UUID; businessType: string; newBusiness: boolean; store: StoreView; policy: PolicyView; accessKey: AccessKeyView;
-}
-/** A store whose business type changed: the same store (id and history), now in the owner's Business of that type. */
-export interface StoreMoved { organizationId: UUID; businessType: string; newBusiness: boolean; store: StoreView }
+export interface StoreOpened { organizationId: UUID; store: StoreView; policy: PolicyView; accessKey: AccessKeyView }
 export interface StoreView {
-  id: UUID; name: string; timezone: string; currency: string; status: string; openedAt: ISODateTime;
+  id: UUID; name: string;
+  /** system business type code; the app shows its translated name (see typeName) */
+  businessType: string;
+  timezone: string; currency: string; status: string; openedAt: ISODateTime;
   /** street address shown to staff (null when not set) */
   address: string | null;
 }
-export interface OrganizationView {
-  id: UUID; name: string; status: string; billingTimezone: string; myRole: OrgRole; stores: StoreView[];
-  description?: string | null; logoVersion?: number | null; businessType: string;
-}
+export interface OrganizationView { id: UUID; status: string; billingTimezone: string; myRole: OrgRole; stores: StoreView[] }
 export interface AccessKeyView { storeId: UUID; version: number; accessKey: string; expiresAt: ISODateTime }
 export interface PolicyView {
   id: UUID; version: number; effectiveFrom: ISODateTime; employeeLimit: number;
@@ -59,9 +51,7 @@ export interface PolicyRules {
   sales?: { enabled?: boolean; commission_percent?: number };
   [key: string]: unknown;
 }
-export interface StoreCreated { store: StoreView; policy: PolicyView; accessKey: AccessKeyView }
-export interface CreateStore { name: string; timezone: string; currency: string; address?: string | null }
-export interface UpdateStore { name: string; address: string | null }
+export interface UpdateStore { name: string; address: string | null; businessType: string }
 export interface UpdatePolicy {
   employeeLimit: number; employeeLimitMode: 'advisory' | 'hard'; minStaff: number; optimalStaff: number;
   maxStaff: number; registrationMode: 'owner_approval' | 'automatic'; swapApprovalRequired: boolean;
@@ -171,16 +161,6 @@ export interface Payslip {
   employmentId: UUID; userId: UUID; displayName: string; storeId: UUID; storeName: string; currency: string;
   wages: number; bonuses: number; adjustments: number; commissions: number; gross: number; lines: PayslipLine[];
 }
-export interface Estimate {
-  planCode: string; currency: string; activeStores: number; activeEmployees: number; baseFee: number;
-  storeFees: number; employeeFees: number; total: number;
-}
-export interface InvoiceLineView { code: string; quantity: number; unitAmount: number; amount: number; description: string }
-export interface InvoiceView {
-  id: UUID; invoiceNumber: string; kind: string; currency: string; periodStart: ISODateTime; periodEnd: ISODateTime;
-  peakStores: number; peakEmployees: number; total: number; issuedAt: ISODateTime; dueAt: ISODateTime;
-  lines: InvoiceLineView[];
-}
 export interface NotificationView {
   id: UUID; eventType: string; title: string | null; payload: Record<string, unknown>;
   availableAt: ISODateTime; deliveredAt: ISODateTime | null;
@@ -212,13 +192,11 @@ export interface PlanSubscription {
 export interface PlanView {
   currency: string; stores: number; employees: number; freeMaxStores: number; freeMaxEmployees: number;
   basePrice: number; includedStores: number; extraStorePrice: number;
-  /** what the business has now */
+  /** what the owner has now */
   plan: 'free' | 'pro'; storeLimit: number; employeeLimit: number | null; subscription: PlanSubscription | null;
   /** cheapest plan covering today's usage */
   needed: 'free' | 'pro' | 'contact'; neededTier: PlanTier | null; overLimit: boolean; tiers: PlanTier[];
   entitlement: string; appUserId: UUID; devPurchase: boolean;
-  /** the plan is the owner's: stores/employees are totals across this many Businesses */
-  businesses: number;
   /** only the owner buys or changes the plan */
   canPurchase: boolean;
 }

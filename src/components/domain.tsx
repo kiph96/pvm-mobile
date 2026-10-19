@@ -106,7 +106,7 @@ export function codeLabel(code: string) {
   return tv('code', code);
 }
 
-/** Stores of the current business plus a selected-store state that defaults to the first. */
+/** Stores of the current account plus a selected-store state that defaults to the first. */
 export function useStores() {
   const api = useApi();
   const { session } = useSession();

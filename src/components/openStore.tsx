@@ -6,16 +6,15 @@ import type { AccessKeyView, StoreOpened } from '@/api/types';
 import { useI18n } from '@/i18n';
 import { useApi, useSession } from '@/state/session';
 import { AccessKeyCard } from './accessKey';
-import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessName, isBusinessType, type BusinessType } from './businessType';
+import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, isBusinessType, type BusinessType } from './businessType';
 import { useAction } from './toast';
 import { Button, Chip, Field, Row, Sheet, Txt } from './ui';
 
 const TIMEZONES = ['Asia/Ho_Chi_Minh', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Tokyo'];
 
 /**
- * Open a new store: the owner picks one of the system business types; the store goes into their
- * Business for that type (the system creates it with their first store of that type). Afterwards the
- * app moves into that Business so the new store is right there.
+ * Open a new store of one of the system business types. The first store also creates the owner's account,
+ * and the app moves into it so the new store is right there.
  */
 export function OpenStoreSheet({ visible, onClose, initialType }: { visible: boolean; onClose: () => void; initialType?: string | null }) {
   const api = useApi();
@@ -38,8 +37,8 @@ export function OpenStoreSheet({ visible, onClose, initialType }: { visible: boo
     setAddress('');
     onClose();
     if (r && session?.workspace?.id !== r.organizationId) {
-      // the store went into another Business (another type): go there
-      await chooseWorkspace({ id: r.organizationId, name: businessName(r), role: 'owner', businessType: r.businessType });
+      // the first store: work in the owner's own account from now on
+      await chooseWorkspace({ id: r.organizationId, name: session?.displayName ?? '', role: 'owner' });
       router.replace('/owner/stores');
     }
   };
@@ -49,7 +48,6 @@ export function OpenStoreSheet({ visible, onClose, initialType }: { visible: boo
     <Sheet visible={visible} onClose={close} title={key ? t('stores.ready') : t('stores.newStore')}>
       {key ? (
         <>
-          {opened?.newBusiness ? <Txt variant="small">{t('openStore.newBusiness', { type: businessName(opened) })}</Txt> : null}
           <Txt muted>{t('stores.shareNote')}</Txt>
           <AccessKeyCard accessKey={key} />
           <Button title={t('common.done')} onPress={close} full />
@@ -62,7 +60,6 @@ export function OpenStoreSheet({ visible, onClose, initialType }: { visible: boo
               <Chip key={bt} icon={BUSINESS_TYPE_ICON[bt]} label={t(`businessType.${bt}`)} selected={type === bt} onPress={() => setType(bt)} />
             ))}
           </Row>
-          {type ? <Txt variant="small" muted>{t('openStore.typeNote', { type: t(`businessType.${type}`) })}</Txt> : null}
           <View style={{ gap: 14 }}>
             <Field label={t('stores.name')} value={name} onChangeText={setName} placeholder={t('stores.namePlaceholder')} />
             <Field label={t('storeInfo.addressOptional')} value={address} onChangeText={setAddress} maxLength={300}

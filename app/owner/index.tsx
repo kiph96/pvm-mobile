@@ -4,14 +4,13 @@ import React from 'react';
 import { View } from 'react-native';
 
 import type { AssignmentView } from '@/api/types';
-import { useBusinessSwitcher } from '@/components/businessSwitcher';
-import { businessName } from '@/components/businessType';
+import { accountName, useAccountSwitcher } from '@/components/accountSwitcher';
 import { ShiftCard, useStores } from '@/components/domain';
 import { GettingStarted } from '@/components/gettingStarted';
 import { useAction } from '@/components/toast';
 import { Avatar, Badge, Button, Card, Empty, IconButton, Loading, Row, Screen, Section, Stat, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
-import { useAllStores, useApprovals, useNotifications, useOrgKey } from '@/state/queries';
+import { useApprovals, useNotifications, useOrgKey } from '@/state/queries';
 import { greetingName, useApi, useSession } from '@/state/session';
 import { ago, fullDate, localDateOf, relativeDay, timeRange, today } from '@/utils/format';
 
@@ -25,8 +24,7 @@ export default function OwnerHome() {
   const approvals = useApprovals();
   const notifications = useNotifications();
   const plan = useQuery({ queryKey: ['plan', org], queryFn: api.plan });
-  const switcher = useBusinessSwitcher();
-  const all = useAllStores();
+  const switcher = useAccountSwitcher();
   const day = today();
   const todays = useQueries({
     queries: stores.map((s) => ({ queryKey: ['shifts', org, s.id, day, day], queryFn: () => api.shifts(s.id, day, day) })),
@@ -42,7 +40,7 @@ export default function OwnerHome() {
   const refresh = () => Promise.all([refetchStores(), approvals.refetch(), notifications.refetch(), plan.refetch(), ...todays.map((q) => q.refetch())]);
 
   return (
-    <Screen title={businessName(session?.workspace) || t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
+    <Screen title={accountName(session?.workspace) || t('tabs.home')} onTitlePress={switcher.open} titleLabel={t('switcher.title')}
       subtitle={t('owner.greeting', { part: t(`time.${greeting()}`), name: greetingName(session) })}
       right={<IconButton icon="notifications-outline" label={t('owner.notifications')} badge={unread} onPress={() => router.push('/notifications')} />}
       onRefresh={refresh} refreshing={false}>
@@ -50,9 +48,7 @@ export default function OwnerHome() {
       <GettingStarted stores={stores} storesLoaded={!storesLoading} />
 
       <Row wrap gap={10} style={{ alignItems: 'stretch' }}>
-        {/* stores of this business; the label adds the total when the owner has other businesses */}
-        <Stat icon="storefront-outline" value={stores.length} tone="accent" onPress={() => router.push('/owner/stores')}
-          label={all.total > stores.length ? t('owner.storesOfTotal', { total: all.total }) : t('owner.stores')} />
+        <Stat icon="storefront-outline" value={stores.length} tone="accent" onPress={() => router.push('/owner/stores')} label={t('owner.stores')} />
         <Stat icon="people-outline" label={t('owner.team')} value={plan.data?.employees ?? '–'} tone="info" onPress={() => router.push('/owner/team')} />
         <Stat icon={understaffed ? 'warning-outline' : 'checkmark-done-outline'} label={t('owner.shortToday')} value={understaffed}
           tone={understaffed ? 'danger' : 'success'} onPress={() => router.push('/owner/schedule')} />

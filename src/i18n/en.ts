@@ -36,7 +36,7 @@ export const en = {
     googleNote: 'Sign in with your Gmail or Facebook account. Two-step verification is coming next.',
     demoTitle: 'Explore the demo', demoNote: 'Pick a person to see the app through their eyes. Demo data lives on this device only.',
     hintOwner1: 'Owner · K Coffee House (2 stores)', hintOwner2: 'Owner · Lan Tea Corner', hintAn: 'Barista · works at 2 stores',
-    hintChi: 'Barista · District 1', hintDung: 'Works for 2 Businesses',
+    hintChi: 'Barista · District 1', hintDung: 'Works for 2 owners',
   },
   auth: {
     facebook: 'Continue with Facebook', welcomeNew: 'Welcome to PVM, {name}! 🎉', failed: 'Sign-in was cancelled or failed',
@@ -46,7 +46,7 @@ export const en = {
   digest: {
     menu: 'Daily shift report', menuSub: "Every evening: is tomorrow fully staffed?",
     intro: "Every evening we check tomorrow's shifts at all your stores and tell you which ones still need people.",
-    enabled: 'Send me the daily report', enabledHint: 'A notification on this phone', time: 'Send at', timeHint: 'Your Business time ({tz})',
+    enabled: 'Send me the daily report', enabledHint: 'A notification on this phone', time: 'Send at', timeHint: 'Store time ({tz})',
     language: 'Notification language', next: 'Next report: {when}', off: 'The daily report is off',
     saved: 'Saved — next report at {time}', preview: 'Tonight it would say', refresh: 'Refresh', sendNow: 'Send it to me now',
     sent: 'Sent! Check your notifications', devicesTitle: 'This phone',
@@ -78,16 +78,15 @@ export const en = {
   theme: { title: 'Appearance', system: 'System', light: 'Light', dark: 'Dark' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
-    store_has_payroll: 'This store already has payroll in its current Business, so its business type cannot change.',
-    same_business_type: 'The store already has this business type.', store_not_active: 'This store is closed.',
-    business_types_fixed: "Businesses are created by the system from your store's business type.", invalid_business_type: 'Unknown business type.',
+    store_not_active: 'This store is closed.',
+    invalid_business_type: 'Unknown business type.',
     no_policy: 'The store has no rules for that time.',
     invalid_shift_span: 'The shift must end after it starts and last at most 7 days.',
     sales_disabled: 'Sales recording is off for this store.', sales_window_closed: 'Sales can be recorded from the start of the shift until 2 hours after it ends.',
     not_on_shift: 'You are not on this shift.', sale_already_paid: 'Commission for this sale is already paid and it can no longer be voided.',
     already_voided: 'This sale was already voided.', invalid_commission_rate: 'Commission must be 2% to 10% in 0.5% steps.',
     invalid_sales_rules: 'Invalid sales settings.', invalid_amount: 'The amount must be greater than 0.',
-    plan_upgrade_required: 'Your plan does not cover another store or staff member (counted across all your Businesses). Upgrade to Pro to continue.',
+    plan_upgrade_required: 'Your plan does not cover another store or staff member (counted across all your stores). Upgrade to Pro to continue.',
     invalid_access_key: 'This access key is wrong or has expired. Ask the store owner for the current key.',
     network: 'Cannot reach the server. Check your connection and the server address.',
     not_found: "Not found — it may have been removed or you don't have access.",
@@ -111,7 +110,7 @@ export const en = {
     overlap: 'This person already works at that time.',
     no_wage: 'Set a wage for this person before booking shifts.',
     employee_limit_reached: 'The store reached its employee limit. Raise it in Store rules.',
-    membership_suspended: 'Your membership in this Business is suspended.',
+    membership_suspended: 'Your membership here is suspended.',
     rate_not_after_current: 'The new wage must start after the current one.',
     invalid_pay_rules: 'Invalid pay rules.',
     invalid_time: 'Invalid time (use HH:mm).',
@@ -151,8 +150,8 @@ export const en = {
     keyNote: 'The key is shown once. Creating a new key disables the old one (people who already joined are not affected).',
   },
   workspace: {
-    hello: 'Hi, {name} 👋', where: 'Where are you working today?', signOut: 'Sign out',
-    noneTitle: 'No Business yet', noneMsg: 'Join your store with the access key from your manager, or open your own store.',
+    back: 'Back to {name}', hello: 'Hi, {name} 👋', where: 'Where are you working today?', signOut: 'Sign out',
+    noneTitle: 'No stores yet', noneMsg: 'Join your store with the access key from your manager, or open your own store.',
     newTitle: 'Something new?', joinStore: 'Join a store with an access key', openStore: 'Open a new store',
     requestsTitle: 'Join requests', pending: 'Waiting for approval', approved: 'Approved', rejected: 'Declined', cancelled: 'Cancelled',
     pendingHint: 'Sent {when} · the owner will review it soon', rejectedHint: 'Contact the store owner if you think this is a mistake.',
@@ -171,7 +170,7 @@ export const en = {
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
   },
   owner: {
-    greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', storesOfTotal: 'Stores here · {total} in all', team: 'Team', shortToday: 'Short today',
+    greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', team: 'Team', shortToday: 'Short today',
     needsOk: 'Needs your OK', allCaughtUp: 'All caught up — nothing waiting for you.', newHire: 'New hire',
     wantsToJoin: 'wants to join {store} · {ago}', joinedTeam: '{name} joined the team', requestDeclined: 'Request declined',
     shiftBadge: 'Shift', asksForShift: 'asks for a shift at {store} · {ago}', shiftBooked: 'Shift booked',
@@ -227,7 +226,7 @@ export const en = {
     reported: 'Issue reported',
   },
   stores: {
-    byTypeSubtitle: '{n} stores · {k} business types', tapToSwitch: 'In another Business — tap to switch there', business: 'Business you are viewing', acrossBusinesses: '{n} stores · {b} Businesses', otherBusiness: 'In {name} — tap to switch there', 
+    byTypeSubtitle: '{n} stores · {k} business types', 
     title: 'Stores', locations: '{n} locations', locations_one: '1 location', add: 'Add store', firstTitle: 'Add your first store',
     firstMsg: 'Each store gets its own shifts, team and access key.', upTo: 'Up to {n} staff', perShift: '{min}/{opt}/{max} per shift',
     auto: 'Auto-approve', youApprove: 'You approve', ready: 'Store ready! 🎉',
@@ -259,7 +258,7 @@ export const en = {
   more: {
     title: 'More', payroll: 'Payroll', payrollSub: 'Pay periods, runs and payslips', violations: 'Attendance & violations',
     violationsSub: 'Late, no-show and points', notifications: 'Notifications', billing: 'Plan & billing', billingSub: 'Your PVM subscription',
-    switch: 'Switch Business', switchSub: 'Work somewhere else', signOut: 'Sign out', signOutTitle: 'Sign out?',
+    switch: 'Switch workplace', switchSub: 'Your stores or another owner', signOut: 'Sign out', signOutTitle: 'Sign out?',
     signOutMsg: 'You can sign back in anytime.', demo: 'Demo data', version: 'PVM · K Tech · v1.0.0',
   },
   payroll: {
@@ -269,8 +268,9 @@ export const en = {
     runLine: 'Run #{n} · {lines} lines', payslips: 'Payslips', shifts: '{n} shifts', shifts_one: '1 shift', bonus: 'bonus {amount}',
     from: 'From', to: 'To (inclusive)', createPeriod: 'Create period', periodCreated: 'Pay period created',
   },
+  account: { mine: 'My stores', of: 'Working for {name}' },
   switcher: {
-    showMore: 'Show {n} more', expand: 'Show {n} stores', collapse: 'Collapse', title: 'Switch Business', note: 'Each Business has its own stores, staff, schedule and plan.', here: 'Viewing',
+    showMore: 'Show {n} more', expand: 'Show {n} stores', collapse: 'Collapse', title: 'Stores', note: 'Tap a store to go straight in.', here: 'Viewing',
     stores: '{n} stores', join: 'Join with a key', all: 'All', change: 'Switch', open: 'Open',
   },
   businessType: {
@@ -278,8 +278,7 @@ export const en = {
     finance_services: 'Finance / Services', manufacturing: 'Manufacturing', others: 'Others',
   },
   openStore: {
-    typeLabel: 'Business type', typeNote: 'The store goes into your {type} Business (created if you have none yet).',
-    newBusiness: 'Your {type} Business was created.',
+    typeLabel: 'Business type',
   },
   closeStore: {
     title: 'Close store', button: 'Close store', confirm: 'Close store', done: '{store} closed',
@@ -292,11 +291,7 @@ export const en = {
     save: 'Save advanced settings', saved: 'Advanced settings saved',
   },
   storeInfo: {
-    type: 'Business type', changeType: 'Change', changeTypeTitle: "Change the store's business type",
-    changeTypeNote: 'The store keeps everything — staff, wages, rules, shift templates, schedule and history — and just moves to your Business of the new type.',
-    moveButton: 'Move store', moveTitle: 'Move to {type}?', moveConfirm: 'Move',
-    moveMsg: '"{store}" will belong to your {type} Business. Staff carry on as usual and its join code keeps working.',
-    moved: 'Store moved to {type}',
+    type: 'Business type',
     title: 'Store details', noAddress: 'No address yet — add one so staff know where to go.', editTitle: 'Edit store details',
     address: 'Address', addressOptional: 'Address (optional)', addressPlaceholder: 'Street, ward, district, city',
     addressHint: 'Staff see this address and can open directions.', saved: 'Store details saved',
@@ -319,8 +314,8 @@ export const en = {
     usage: '{stores}/{storeLimit} stores · {employees} staff', unlimitedStaff: 'unlimited staff',
     renews: 'renews {date}', endsOn: 'ends {date}', expired: 'Pro expired on {date}.',
     overLimit: 'You are using more than your plan covers. Everything keeps working, but you need to upgrade to add stores or staff.',
-    pricing: 'Pricing', freeLine: '{stores} store, up to {people} staff — counted across all your Businesses.',
-    acrossBusinesses: 'One plan for all {n} of your Businesses', ownerOnly: 'Only the owner can buy or change the plan.',
+    pricing: 'Pricing', freeLine: '{stores} store, up to {people} staff.',
+    ownerOnly: 'Only the owner can buy or change the plan.',
     proLine: '{price}/month for up to {n} stores, unlimited staff. From store {from}: {extra} per extra store.',
     upgrade: 'Upgrade to Pro', change: 'Change plan', stores: 'Number of stores', includes: 'Includes up to {n} stores',
     breakdown: '{base} + {extra} × {each}', perMonth: ' /month', tooSmall: 'You have {n} stores — this plan is too small.',
@@ -379,7 +374,7 @@ export const en = {
   },
   payslips: { none: 'No payslips yet', noneMsg: 'They appear after your manager runs payroll.', wages: 'Wages {amount}', bonus: 'Bonus {amount}', commission: 'Commission {amount}' },
   mock: {
-    notSignedIn: 'Not signed in', chooseBusiness: 'Choose a Business first', notMember: 'You are not a member of this Business',
+    notSignedIn: 'Not signed in', chooseBusiness: 'Choose a workplace first', notMember: 'You are not a member here',
     ownersOnly: 'Only owners and admins can do this', badKey: 'That access key is not valid. Ask the store owner for the current key.',
     publishFirst: 'Publish the shift before assigning people', shiftFull: 'This shift is full (max {n})',
     busy: 'This person already works at that time', notAtStore: 'You do not work at this store', closed: 'Registration is closed for this shift',

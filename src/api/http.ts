@@ -75,7 +75,7 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     const bearer = token ?? a.accessToken;
     if (bearer) h.Authorization = `Bearer ${bearer}`;
     else if (a.userId) h['X-User-Id'] = a.userId;
-    // a call may name another business explicitly (e.g. listing stores of all my businesses)
+    // a call may name another account explicitly
     if (a.organizationId && !h['X-Organization-Id']) h['X-Organization-Id'] = a.organizationId;
     try {
       return await fetch(root + '/api' + path, {
@@ -121,14 +121,10 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     myOrganizations: () => call<T.MyOrganization[]>('GET', '/me/organizations'),
     organization: () => call<T.OrganizationView>('GET', '/organization'),
     stores: () => call<T.StoreView[]>('GET', '/stores'),
-    /** Stores of any business I belong to, not only the one I am working in. */
-    storesOf: (organizationId: string) => call<T.StoreView[]>('GET', '/stores', undefined, { 'X-Organization-Id': organizationId }),
-    createStore: (req: T.CreateStore) => call<T.StoreCreated>('POST', '/stores', req),
-    /** Owner opens a store of a business type (no Business needed beforehand). */
+    /** Owner opens a store of a business type (their account is created with the first one). */
     openStore: (req: T.OpenStore) => call<T.StoreOpened>('POST', '/me/stores', req),
     updateStore: (storeId: string, req: T.UpdateStore) => call<T.StoreView>('PUT', `/stores/${storeId}`, req),
     closeStore: (storeId: string) => call<T.StoreView>('POST', `/stores/${storeId}/close`),
-    moveStore: (storeId: string, businessType: string) => call<T.StoreMoved>('POST', `/stores/${storeId}/move`, { businessType }),
     rotateAccessKey: (storeId: string) => call<T.AccessKeyView>('POST', `/stores/${storeId}/access-key/rotate`),
     policy: (storeId: string) => call<T.PolicyView>('GET', `/stores/${storeId}/policy`),
     updatePolicy: (storeId: string, req: T.UpdatePolicy) => call<T.PolicyView>('PUT', `/stores/${storeId}/policy`, req),
@@ -204,7 +200,6 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.RunView>('POST', `/payroll/periods/${periodId}/runs`, undefined, { 'Idempotency-Key': `run-${periodId}-${Date.now()}` }),
     payslips: (runId: string) => call<T.Payslip[]>('GET', `/payroll/runs/${runId}/payslips`),
     myPayslips: () => call<T.Payslip[]>('GET', '/me/payslips'),
-    estimate: () => call<T.Estimate>('GET', '/billing/estimate'),
     plan: () => call<T.PlanView>('GET', '/billing/plan'),
     // sales during a shift
     shiftSales: (shiftId: string) => call<T.ShiftSales>('GET', `/shifts/${shiftId}/sales`),
@@ -212,7 +207,6 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     voidSale: (saleId: string, reason?: string) => call<T.ShiftSales>('POST', `/sales/${saleId}/void`, { reason: reason ?? null }),
     syncPlan: () => call<T.PlanView>('POST', '/billing/plan/sync'),
     devPurchase: (storeQuota: number) => call<T.PlanView>('POST', '/billing/plan/dev-purchase', { storeQuota }),
-    invoices: () => call<T.InvoiceView[]>('GET', '/billing/invoices'),
     notifications: () => call<T.NotificationView[]>('GET', '/notifications'),
 
     // owner's evening digest + push devices

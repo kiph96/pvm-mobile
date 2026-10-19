@@ -37,7 +37,7 @@ export const vi: Dict = {
     googleNote: 'Đăng nhập bằng tài khoản Gmail hoặc Facebook. Xác thực 2 bước sẽ có trong bản tới.',
     demoTitle: 'Dùng thử bản demo', demoNote: 'Chọn một người để xem ứng dụng dưới góc nhìn của họ. Dữ liệu demo chỉ lưu trên máy này.',
     hintOwner1: 'Chủ · K Coffee House (2 cửa hàng)', hintOwner2: 'Chủ · Lan Tea Corner', hintAn: 'Pha chế · làm ở 2 cửa hàng',
-    hintChi: 'Pha chế · Quận 1', hintDung: 'Làm cho 2 Business',
+    hintChi: 'Pha chế · Quận 1', hintDung: 'Làm cho 2 chủ cửa hàng',
   },
   auth: {
     facebook: 'Tiếp tục với Facebook', welcomeNew: 'Chào mừng {name} đến với PVM! 🎉', failed: 'Đăng nhập đã bị huỷ hoặc thất bại',
@@ -47,7 +47,7 @@ export const vi: Dict = {
   digest: {
     menu: 'Báo cáo ca hằng ngày', menuSub: 'Mỗi tối: ngày mai có đủ người không?',
     intro: 'Mỗi tối hệ thống kiểm tra các ca ngày mai ở tất cả cửa hàng và báo cho bạn ca nào còn thiếu người.',
-    enabled: 'Gửi báo cáo hằng ngày cho tôi', enabledHint: 'Thông báo trên điện thoại này', time: 'Giờ gửi', timeHint: 'Theo giờ của Business ({tz})',
+    enabled: 'Gửi báo cáo hằng ngày cho tôi', enabledHint: 'Thông báo trên điện thoại này', time: 'Giờ gửi', timeHint: 'Theo giờ cửa hàng ({tz})',
     language: 'Ngôn ngữ thông báo', next: 'Báo cáo tiếp theo: {when}', off: 'Báo cáo hằng ngày đang tắt',
     saved: 'Đã lưu — báo cáo tiếp theo lúc {time}', preview: 'Tối nay sẽ báo', refresh: 'Làm mới', sendNow: 'Gửi thử cho tôi ngay',
     sent: 'Đã gửi! Hãy kiểm tra thông báo', devicesTitle: 'Điện thoại này',
@@ -79,16 +79,15 @@ export const vi: Dict = {
   theme: { title: 'Giao diện', system: 'Theo hệ thống', light: 'Sáng', dark: 'Tối' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
-    store_has_payroll: 'Cửa hàng đã có bảng lương ở Business hiện tại nên không thể đổi loại hình.',
-    same_business_type: 'Cửa hàng đã thuộc loại hình này.', store_not_active: 'Cửa hàng đã đóng.',
-    business_types_fixed: 'Business do hệ thống tạo theo loại hình của cửa hàng; bạn không cần tự tạo.', invalid_business_type: 'Loại hình kinh doanh không hợp lệ.',
+    store_not_active: 'Cửa hàng đã đóng.',
+    invalid_business_type: 'Loại hình kinh doanh không hợp lệ.',
     no_policy: 'Cửa hàng chưa có quy định cho thời điểm này.',
     invalid_shift_span: 'Ca phải kết thúc sau khi bắt đầu và kéo dài tối đa 7 ngày.',
     sales_disabled: 'Cửa hàng chưa bật ghi doanh số.', sales_window_closed: 'Chỉ ghi được doanh số từ lúc ca bắt đầu đến 2 giờ sau khi ca kết thúc.',
     not_on_shift: 'Bạn không có trong ca này.', sale_already_paid: 'Hoa hồng của giao dịch này đã được trả, không thể huỷ.',
     already_voided: 'Giao dịch đã được huỷ trước đó.', invalid_commission_rate: 'Hoa hồng phải từ 2% đến 10% (bước 0,5%).',
     invalid_sales_rules: 'Cài đặt doanh số không hợp lệ.', invalid_amount: 'Số tiền phải lớn hơn 0.',
-    plan_upgrade_required: 'Gói của bạn không đủ để thêm cửa hàng hoặc nhân viên (tính chung mọi Business của bạn). Nâng cấp lên Pro để tiếp tục.',
+    plan_upgrade_required: 'Gói của bạn không đủ để thêm cửa hàng hoặc nhân viên (tính chung mọi cửa hàng của bạn). Nâng cấp lên Pro để tiếp tục.',
     invalid_access_key: 'Mã tham gia không đúng hoặc đã hết hạn. Hãy hỏi chủ cửa hàng mã hiện tại.',
     network: 'Không kết nối được máy chủ. Kiểm tra mạng và địa chỉ máy chủ.',
     not_found: 'Không tìm thấy dữ liệu — có thể đã bị xoá hoặc bạn không có quyền xem.',
@@ -112,7 +111,7 @@ export const vi: Dict = {
     overlap: 'Người này đã có ca khác trùng giờ.',
     no_wage: 'Nhân viên chưa có mức lương. Hãy đặt lương trước khi xếp ca.',
     employee_limit_reached: 'Cửa hàng đã đủ số nhân viên tối đa. Tăng giới hạn trong Quy định cửa hàng.',
-    membership_suspended: 'Tài khoản của bạn ở Business này đang bị tạm ngưng.',
+    membership_suspended: 'Tài khoản của bạn ở đây đang bị tạm ngưng.',
     rate_not_after_current: 'Mức lương mới phải áp dụng sau mức lương hiện tại.',
     invalid_pay_rules: 'Cách tính lương không hợp lệ.',
     invalid_time: 'Giờ không hợp lệ (định dạng HH:mm).',
@@ -152,8 +151,8 @@ export const vi: Dict = {
     keyNote: 'Mã chỉ hiện một lần. Tạo mã mới sẽ vô hiệu hoá mã cũ (người đã tham gia không bị ảnh hưởng).',
   },
   workspace: {
-    hello: 'Chào {name} 👋', where: 'Hôm nay bạn làm ở đâu?', signOut: 'Đăng xuất',
-    noneTitle: 'Chưa có Business nào', noneMsg: 'Tham gia cửa hàng bằng mã từ quản lý, hoặc mở cửa hàng của bạn.',
+    back: 'Quay lại {name}', hello: 'Chào {name} 👋', where: 'Hôm nay bạn làm ở đâu?', signOut: 'Đăng xuất',
+    noneTitle: 'Chưa có cửa hàng nào', noneMsg: 'Tham gia cửa hàng bằng mã từ quản lý, hoặc mở cửa hàng của bạn.',
     newTitle: 'Bắt đầu điều mới?', joinStore: 'Tham gia cửa hàng bằng mã', openStore: 'Mở cửa hàng mới',
     requestsTitle: 'Yêu cầu tham gia', pending: 'Đang chờ duyệt', approved: 'Đã được duyệt', rejected: 'Bị từ chối', cancelled: 'Đã huỷ',
     pendingHint: 'Gửi {when} · chủ cửa hàng sẽ duyệt sớm', rejectedHint: 'Hãy liên hệ chủ cửa hàng nếu bạn nghĩ đây là nhầm lẫn.',
@@ -172,7 +171,7 @@ export const vi: Dict = {
     violations: 'Chuyên cần & vi phạm', notifications: 'Thông báo', payslips: 'Phiếu lương của tôi', join: 'Tham gia cửa hàng', digest: 'Báo cáo ca hằng ngày',
   },
   owner: {
-    greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', storesOfTotal: 'Cửa hàng ở đây · tổng {total}', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
+    greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
     needsOk: 'Cần bạn duyệt', allCaughtUp: 'Đã xử lý hết — không có gì đang chờ bạn.', newHire: 'Nhân viên mới',
     wantsToJoin: 'muốn tham gia {store} · {ago}', joinedTeam: '{name} đã gia nhập', requestDeclined: 'Đã từ chối yêu cầu',
     shiftBadge: 'Ca làm', asksForShift: 'xin ca tại {store} · {ago}', shiftBooked: 'Đã xếp ca',
@@ -228,7 +227,7 @@ export const vi: Dict = {
     reported: 'Đã báo cáo vi phạm',
   },
   stores: {
-    byTypeSubtitle: '{n} cửa hàng · {k} loại hình', tapToSwitch: 'Thuộc Business khác — chạm để chuyển sang', business: 'Business đang xem', acrossBusinesses: '{n} cửa hàng · {b} Business', otherBusiness: 'Thuộc {name} — chạm để chuyển sang', 
+    byTypeSubtitle: '{n} cửa hàng · {k} loại hình', 
     title: 'Cửa hàng', locations: '{n} cửa hàng', locations_one: '1 cửa hàng', add: 'Thêm cửa hàng', firstTitle: 'Thêm cửa hàng đầu tiên',
     firstMsg: 'Mỗi cửa hàng có ca làm, nhân viên và mã tham gia riêng.', upTo: 'Tối đa {n} nhân viên', perShift: '{min}/{opt}/{max} người mỗi ca',
     auto: 'Tự động duyệt', youApprove: 'Bạn duyệt', ready: 'Cửa hàng đã sẵn sàng! 🎉',
@@ -260,7 +259,7 @@ export const vi: Dict = {
   more: {
     title: 'Thêm', payroll: 'Bảng lương', payrollSub: 'Kỳ lương, chạy lương và phiếu lương', violations: 'Chuyên cần & vi phạm',
     violationsSub: 'Đi trễ, vắng mặt và điểm', notifications: 'Thông báo', billing: 'Gói dịch vụ', billingSub: 'Gói PVM của bạn',
-    switch: 'Đổi Business', switchSub: 'Làm việc ở nơi khác', signOut: 'Đăng xuất', signOutTitle: 'Đăng xuất?',
+    switch: 'Đổi nơi làm việc', switchSub: 'Cửa hàng của bạn hoặc chủ khác', signOut: 'Đăng xuất', signOutTitle: 'Đăng xuất?',
     signOutMsg: 'Bạn có thể đăng nhập lại bất cứ lúc nào.', demo: 'Dữ liệu demo', version: 'PVM · K Tech · v1.0.0',
   },
   payroll: {
@@ -270,8 +269,9 @@ export const vi: Dict = {
     runLine: 'Lần {n} · {lines} dòng', payslips: 'Phiếu lương', shifts: '{n} ca', shifts_one: '1 ca', bonus: 'thưởng {amount}',
     from: 'Từ ngày', to: 'Đến ngày (bao gồm)', createPeriod: 'Tạo kỳ lương', periodCreated: 'Đã tạo kỳ lương',
   },
+  account: { mine: 'Cửa hàng của tôi', of: 'Làm cho {name}' },
   switcher: {
-    showMore: 'Xem thêm {n} cửa hàng', expand: 'Xem {n} cửa hàng', collapse: 'Thu gọn', title: 'Đổi Business', note: 'Mỗi Business có cửa hàng, nhân viên, lịch ca và gói riêng.', here: 'Đang xem',
+    showMore: 'Xem thêm {n} cửa hàng', expand: 'Xem {n} cửa hàng', collapse: 'Thu gọn', title: 'Cửa hàng', note: 'Chạm vào một cửa hàng để vào thẳng.', here: 'Đang xem',
     stores: '{n} cửa hàng', join: 'Tham gia bằng mã', all: 'Tất cả', change: 'Đổi', open: 'Mở',
   },
   businessType: {
@@ -279,8 +279,7 @@ export const vi: Dict = {
     finance_services: 'Tài chính / Dịch vụ', manufacturing: 'Sản xuất', others: 'Khác',
   },
   openStore: {
-    typeLabel: 'Loại hình kinh doanh', typeNote: 'Cửa hàng sẽ thuộc Business {type} của bạn (tự tạo nếu chưa có).',
-    newBusiness: 'Đã tạo Business {type} cho bạn.',
+    typeLabel: 'Loại hình kinh doanh',
   },
   closeStore: {
     title: 'Đóng cửa hàng', button: 'Đóng cửa hàng', confirm: 'Đóng cửa hàng', done: 'Đã đóng {store}',
@@ -293,11 +292,7 @@ export const vi: Dict = {
     save: 'Lưu cài đặt nâng cao', saved: 'Đã lưu cài đặt nâng cao',
   },
   storeInfo: {
-    type: 'Loại hình', changeType: 'Đổi', changeTypeTitle: 'Đổi loại hình cửa hàng',
-    changeTypeNote: 'Cửa hàng giữ nguyên mọi thứ — nhân viên, mức lương, quy tắc, mẫu ca, lịch ca và lịch sử — và chỉ chuyển sang Business của loại hình mới.',
-    moveButton: 'Chuyển cửa hàng', moveTitle: 'Chuyển sang {type}?', moveConfirm: 'Chuyển',
-    moveMsg: '"{store}" sẽ thuộc Business {type}. Nhân viên vẫn làm việc bình thường, mã tham gia vẫn dùng được.',
-    moved: 'Đã chuyển cửa hàng sang {type}',
+    type: 'Loại hình',
     title: 'Thông tin cửa hàng', noAddress: 'Chưa có địa chỉ — thêm để nhân viên biết chỗ làm.', editTitle: 'Sửa thông tin cửa hàng',
     address: 'Địa chỉ', addressOptional: 'Địa chỉ (không bắt buộc)', addressPlaceholder: 'Số nhà, đường, phường, quận, thành phố',
     addressHint: 'Nhân viên thấy địa chỉ này và có thể mở chỉ đường.', saved: 'Đã lưu thông tin cửa hàng',
@@ -320,8 +315,8 @@ export const vi: Dict = {
     usage: '{stores}/{storeLimit} cửa hàng · {employees} nhân viên', unlimitedStaff: 'không giới hạn nhân viên',
     renews: 'gia hạn {date}', endsOn: 'kết thúc {date}', expired: 'Gói Pro đã hết hạn ngày {date}.',
     overLimit: 'Bạn đang dùng nhiều hơn gói hiện tại. Mọi thứ vẫn hoạt động, nhưng cần nâng cấp để thêm cửa hàng hoặc nhân viên.',
-    pricing: 'Bảng giá', freeLine: '{stores} cửa hàng, tối đa {people} nhân viên — tính chung mọi Business của bạn.',
-    acrossBusinesses: 'Một gói cho cả {n} Business của bạn', ownerOnly: 'Chỉ chủ Business mới mua hoặc đổi gói.',
+    pricing: 'Bảng giá', freeLine: '{stores} cửa hàng, tối đa {people} nhân viên.',
+    ownerOnly: 'Chỉ chủ cửa hàng mới mua hoặc đổi gói.',
     proLine: '{price}/tháng cho tối đa {n} cửa hàng, không giới hạn nhân viên. Từ cửa hàng thứ {from}: thêm {extra}/cửa hàng.',
     upgrade: 'Nâng cấp lên Pro', change: 'Đổi gói', stores: 'Số cửa hàng', includes: 'Gồm tối đa {n} cửa hàng',
     breakdown: '{base} + {extra} × {each}', perMonth: ' /tháng', tooSmall: 'Bạn đang có {n} cửa hàng — gói này chưa đủ.',
@@ -380,7 +375,7 @@ export const vi: Dict = {
   },
   payslips: { none: 'Chưa có phiếu lương', noneMsg: 'Phiếu lương hiện sau khi quản lý chạy lương.', wages: 'Lương {amount}', bonus: 'Thưởng {amount}', commission: 'Hoa hồng {amount}' },
   mock: {
-    notSignedIn: 'Chưa đăng nhập', chooseBusiness: 'Hãy chọn Business trước', notMember: 'Bạn không thuộc Business này',
+    notSignedIn: 'Chưa đăng nhập', chooseBusiness: 'Hãy chọn nơi làm việc trước', notMember: 'Bạn không thuộc nơi này',
     ownersOnly: 'Chỉ chủ cửa hàng hoặc quản lý mới làm được', badKey: 'Mã tham gia không hợp lệ. Hãy hỏi chủ cửa hàng mã hiện tại.',
     publishFirst: 'Hãy công bố ca trước khi xếp người', shiftFull: 'Ca đã đủ người (tối đa {n})',
     busy: 'Người này đã có ca trùng giờ', notAtStore: 'Bạn không làm ở cửa hàng này', closed: 'Ca này đã đóng đăng ký',

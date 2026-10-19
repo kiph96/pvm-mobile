@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSignOut } from '@/state/useSignOut';
-import { businessIcon, businessName } from './businessType';
+import { accountName } from './accountSwitcher';
 import { LanguagePicker } from './language';
 import { ThemePicker } from './themePicker';
 import { Avatar, Badge, Card, IconBubble, ListItem, Row, Txt, type IconName, type Tone } from './ui';
@@ -15,7 +15,7 @@ export interface MenuItem { title: string; subtitle?: string; icon: IconName; to
 /** Profile header + menu + language + switch/sign-out, used by both the owner and staff "More/Me" tabs. */
 export function ProfileMenu({ items }: { items: MenuItem[] }) {
   const { t } = useI18n();
-  const { session, chooseWorkspace } = useSession();
+  const { session } = useSession();
   const signOut = useSignOut();
   if (!session) return null;
   return (
@@ -26,7 +26,7 @@ export function ProfileMenu({ items }: { items: MenuItem[] }) {
           <View style={{ flex: 1, gap: 4 }}>
             <Txt variant="heading">{session.displayName}</Txt>
             <Row gap={6} wrap>
-              <Badge label={businessName(session.workspace)} tone="accent" icon={businessIcon(session.workspace?.businessType)} />
+              <Badge label={accountName(session.workspace)} tone="accent" icon={session.workspace?.role === 'owner' ? 'storefront-outline' : 'briefcase-outline'} />
               {session.mode === 'demo' ? <Badge label={t('more.demo')} tone="info" /> : null}
               {session.method === 'google' ? <Badge label="Google" tone="info" icon="logo-google" />
                 : session.method === 'facebook' ? <Badge label="Facebook" tone="info" icon="logo-facebook" /> : null}
@@ -54,7 +54,7 @@ export function ProfileMenu({ items }: { items: MenuItem[] }) {
         <ThemePicker />
       </Card>
       <ListItem title={t('more.switch')} subtitle={t('more.switchSub')} left={<IconBubble icon="swap-horizontal-outline" tone="info" size={38} />}
-        onPress={async () => { await chooseWorkspace(null); router.replace('/workspace'); }} />
+        onPress={() => router.push('/workspace')} />
       <ListItem title={t('more.signOut')} left={<IconBubble icon="log-out-outline" tone="danger" size={38} />} chevron={false}
         onPress={signOut} />
       <Txt variant="small" muted center style={{ marginTop: 16 }}>{t('more.version')}</Txt>

@@ -49,7 +49,7 @@ export function Txt({ variant = 'body', muted, color, style, children, numberOfL
 export function Screen({ title, subtitle, right, children, onRefresh, refreshing = false, scroll = true, padded = true, onTitlePress, titleLabel }: {
   title?: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode; onRefresh?: () => void;
   refreshing?: boolean; scroll?: boolean; padded?: boolean;
-  /** makes the title a button with a ▾ (e.g. the business switcher); titleLabel is its accessibility label */
+  /** makes the title a button with a ▾ (e.g. the store switcher); titleLabel is its accessibility label */
   onTitlePress?: () => void; titleLabel?: string;
 }) {
   const { colors, spacing } = useTheme();
@@ -167,7 +167,7 @@ export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?:
 }
 
 const AVATAR_TONES: Tone[] = ['primary', 'accent', 'info', 'warning', 'success'];
-/** Initials in a coloured circle, or the picture at `uri` (e.g. a Business logo) when there is one. */
+/** Initials in a coloured circle, or the picture at `uri` when there is one. */
 export function Avatar({ name, size = 40, uri, square }: { name: string; size?: number; uri?: string | null; square?: boolean }) {
   const { colors } = useTheme();
   const tone = AVATAR_TONES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_TONES.length];

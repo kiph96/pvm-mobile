@@ -12,7 +12,7 @@ import { useTheme } from '@/theme';
 import { Badge, Button, Card, Row, Txt } from './ui';
 
 /**
- * Owner checklist for a new business: store → shift templates → staff. The schedule then fills itself
+ * Owner checklist for a new owner: store → shift templates → staff. The schedule then fills itself
  * from the templates (server auto-fill, two weeks ahead).
  * Each step links to where it is done; the card disappears once everything is set up.
  */

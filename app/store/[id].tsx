@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import type { AccessKeyView, PolicyRules, PolicyView, StoreView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
 import { AdvancedSettings } from '@/components/advancedSettings';
-import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessIcon, businessName, type BusinessType } from '@/components/businessType';
+import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessIcon, isBusinessType, typeName, type BusinessType } from '@/components/businessType';
 import { codeLabel, useStores } from '@/components/domain';
 import { PayRulesEditor } from '@/components/payRules';
 import { useAction } from '@/components/toast';
@@ -29,7 +29,6 @@ export default function StoreSettings() {
   const [key, setKey] = useState<AccessKeyView | null>(null);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [typeOpen, setTypeOpen] = useState(false);
   const { session } = useSession();
   const ws = session?.workspace;
   const { colors } = useTheme();
@@ -63,9 +62,8 @@ export default function StoreSettings() {
               <Txt variant="small" muted={!store.address} style={{ flex: 1 }}>{store.address ?? t('storeInfo.noAddress')}</Txt>
             </Row>
             <Row gap={8}>
-              <Ionicons name={businessIcon(ws?.businessType)} size={18} color={colors.text} />
-              <Txt variant="small" style={{ flex: 1 }}>{t('storeInfo.type')}: {businessName(ws)}</Txt>
-              {ws?.role === 'owner' ? <Button small variant="ghost" icon="swap-horizontal" title={t('storeInfo.changeType')} onPress={() => setTypeOpen(true)} /> : null}
+              <Ionicons name={businessIcon(store.businessType)} size={18} color={colors.text} />
+              <Txt variant="small" style={{ flex: 1 }}>{t('storeInfo.type')}: {typeName(store.businessType)}</Txt>
             </Row>
           </Card>
         </Section>
@@ -99,7 +97,6 @@ export default function StoreSettings() {
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
       {policy.data ? <AdvancedSettings storeId={id} policy={policy.data} /> : null}
       {store ? <EditStoreSheet visible={editOpen} onClose={() => setEditOpen(false)} store={store} /> : null}
-      {store ? <ChangeTypeSheet visible={typeOpen} onClose={() => setTypeOpen(false)} store={store} current={ws?.businessType} /> : null}
       <TemplateSheet visible={templateOpen} onClose={() => setTemplateOpen(false)} storeId={id}
         autoDays={autoSchedule(policy.data).on ? autoSchedule(policy.data).days : null} />
 
@@ -233,67 +230,37 @@ function TemplateSheet({ visible, onClose, storeId, autoDays }: { visible: boole
   );
 }
 
-/**
- * Owner changes the store's business type: it moves to their Business of that type (created if needed) with
- * its staff, wages, rules, templates and upcoming shifts. Past shifts and pay stay in the old Business.
- */
-function ChangeTypeSheet({ visible, onClose, store, current }: { visible: boolean; onClose: () => void; store: StoreView; current?: string | null }) {
-  const api = useApi();
-  const { t } = useI18n();
-  const { chooseWorkspace } = useSession();
-  const [run, busy] = useAction();
-  const [type, setType] = useState<BusinessType | null>(null);
-  useEffect(() => {
-    if (visible) setType(null);
-  }, [visible]);
-  const move = async () => {
-    if (!type) return;
-    const typeName = t(`businessType.${type}`);
-    if (!await confirm(t('storeInfo.moveTitle', { type: typeName }), t('storeInfo.moveMsg', { store: store.name, type: typeName }), t('storeInfo.moveConfirm'))) return;
-    const r = await run('move', () => api.moveStore(store.id, type), t('storeInfo.moved', { type: typeName }));
-    if (!r) return;
-    onClose();
-    // follow the store into its new Business
-    await chooseWorkspace({ id: r.organizationId, name: businessName(r), role: 'owner', businessType: r.businessType });
-    router.replace(`/store/${r.store.id}`);
-  };
-  return (
-    <Sheet visible={visible} onClose={onClose} title={t('storeInfo.changeTypeTitle')}>
-      <Txt variant="small" muted>{t('storeInfo.changeTypeNote')}</Txt>
-      <Row gap={8} wrap>
-        {BUSINESS_TYPES.map((bt) => (
-          <Chip key={bt} icon={BUSINESS_TYPE_ICON[bt]} label={t(`businessType.${bt}`)} selected={type === bt || (!type && current === bt)}
-            onPress={() => { if (bt !== current) setType(bt); }} />
-        ))}
-      </Row>
-      <Button title={t('storeInfo.moveButton')} icon="swap-horizontal" full loading={busy === 'move'} disabled={!type} onPress={move} />
-    </Sheet>
-  );
-}
-
-/** Owner edits the store's name and address. Timezone and currency stay fixed: shifts and pay depend on them. */
+/** Owner edits the store's name, address and business type. Timezone and currency stay fixed: shifts and pay depend on them. */
 function EditStoreSheet({ visible, onClose, store }: { visible: boolean; onClose: () => void; store: StoreView }) {
   const api = useApi();
   const { t } = useI18n();
   const [run, busy] = useAction();
   const [name, setName] = useState(store.name);
   const [address, setAddress] = useState(store.address ?? '');
+  const [type, setType] = useState<BusinessType>(isBusinessType(store.businessType) ? store.businessType : 'others');
   useEffect(() => {
     if (visible) {
       setName(store.name);
       setAddress(store.address ?? '');
+      setType(isBusinessType(store.businessType) ? store.businessType : 'others');
     }
   }, [visible, store]);
-  const changed = name.trim() !== store.name || (address.trim() || null) !== (store.address ?? null);
+  const changed = name.trim() !== store.name || (address.trim() || null) !== (store.address ?? null) || type !== store.businessType;
   return (
     <Sheet visible={visible} onClose={onClose} title={t('storeInfo.editTitle')}>
       <Field label={t('stores.name')} value={name} onChangeText={setName} maxLength={200} />
       <Field label={t('storeInfo.address')} value={address} onChangeText={setAddress} maxLength={300} multiline
         placeholder={t('storeInfo.addressPlaceholder')} hint={t('storeInfo.addressHint')} />
+      <Txt variant="small" muted>{t('storeInfo.type')}</Txt>
+      <Row gap={8} wrap>
+        {BUSINESS_TYPES.map((bt) => (
+          <Chip key={bt} icon={BUSINESS_TYPE_ICON[bt]} label={t(`businessType.${bt}`)} selected={type === bt} onPress={() => setType(bt)} />
+        ))}
+      </Row>
       <Txt variant="small" muted>{t('storeInfo.fixed', { tz: store.timezone, currency: store.currency })}</Txt>
       <Button title={t('common.save')} icon="checkmark" full loading={busy === 'save'} disabled={!name.trim() || !changed}
         onPress={async () => {
-          const r = await run('save', () => api.updateStore(store.id, { name: name.trim(), address: address.trim() || null }), t('storeInfo.saved'));
+          const r = await run('save', () => api.updateStore(store.id, { name: name.trim(), address: address.trim() || null, businessType: type }), t('storeInfo.saved'));
           if (r) onClose();
         }} />
     </Sheet>
