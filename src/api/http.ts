@@ -158,6 +158,12 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     updateStaffing: (id: string, minStaff: number, optimalStaff: number, maxStaff: number) =>
       call<T.ShiftView>('PUT', `/shifts/${id}/staffing`, { minStaff, optimalStaff, maxStaff }),
     registerForShift: (shiftId: string) => call<T.RequestView>('POST', `/shifts/${shiftId}/requests`),
+    preferences: (storeId: string) => call<T.ShiftPreferences>('GET', `/me/preferences?storeId=${storeId}`),
+    savePreferences: (req: T.UpdatePreferences) => call<T.ShiftPreferences>('PUT', '/me/preferences', req),
+    /** Ask for every open shift next week that matches my preferences. */
+    requestWeek: (storeId: string) => call<T.WeekRequestResult>('POST', '/me/week-requests', { storeId }),
+    /** Owner/admin: staff next week now from the staff's preferences. */
+    autoStaff: (storeId: string) => call<T.AutoStaffResult>('POST', `/stores/${storeId}/auto-staff`),
     openRequests: (storeId?: string) => call<T.RequestView[]>('GET', '/shift-requests' + q({ storeId })),
     approveRequest: (id: string) => call<T.RequestView>('POST', `/shift-requests/${id}/approve`),
     rejectRequest: (id: string) => call<T.RequestView>('POST', `/shift-requests/${id}/reject`),

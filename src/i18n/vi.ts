@@ -167,7 +167,7 @@ export const vi: Dict = {
     myShifts: 'Ca của tôi', swaps: 'Đổi ca', me: 'Tôi',
   },
   screens: {
-    shift: 'Ca làm', employee: 'Nhân viên', store: 'Cài đặt cửa hàng', payroll: 'Bảng lương', billing: 'Gói dịch vụ',
+    preferences: 'Ca mong muốn', shift: 'Ca làm', employee: 'Nhân viên', store: 'Cài đặt cửa hàng', payroll: 'Bảng lương', billing: 'Gói dịch vụ',
     violations: 'Chuyên cần & vi phạm', notifications: 'Thông báo', payslips: 'Phiếu lương của tôi', join: 'Tham gia cửa hàng', digest: 'Báo cáo ca hằng ngày',
   },
   owner: {
@@ -285,6 +285,26 @@ export const vi: Dict = {
     title: 'Đóng cửa hàng', button: 'Đóng cửa hàng', confirm: 'Đóng cửa hàng', done: 'Đã đóng {store}',
     note: 'Dùng khi cửa hàng ngừng hoạt động hẳn. Các ca chưa bắt đầu sẽ bị huỷ, nhân viên thôi làm ở đây và được báo, mã tham gia hết hiệu lực. Lịch sử ca, doanh số và lương vẫn được giữ; ca đã làm vẫn được trả ở kỳ lương tới. Cửa hàng đã đóng không tính vào gói.',
     confirmTitle: 'Đóng {store}?', confirmMsg: 'Không thể mở lại cửa hàng này. Các ca sắp tới sẽ bị huỷ và nhân viên được báo.',
+  },
+  prefs: {
+    menu: 'Ca mong muốn', menuSub: 'Chọn ca bạn thường làm được',
+    intro: 'Chọn những ca bạn thường làm được. Bạn có thể nhận cả tuần sau chỉ với một chạm, và cửa hàng có thể tự xếp bạn vào các ca này.',
+    allWeek: 'Chọn cả tuần', clear: 'Bỏ chọn', perWeek: 'Giới hạn số ca mỗi tuần', perWeekHint: 'Không nhận và không được xếp quá số ca này',
+    max: 'Tối đa mỗi tuần', chosen: 'Đã chọn {n} ca mỗi tuần', save: 'Lưu ca mong muốn', saved: 'Đã lưu ca mong muốn',
+    noTemplates: 'Cửa hàng chưa có mẫu ca', noTemplatesMsg: 'Khi chủ cửa hàng tạo mẫu ca, bạn chọn ca mong muốn ở đây.',
+  },
+  week: {
+    title: 'Nhận cả tuần sau', hint: 'Một chạm gửi yêu cầu cho mọi ca còn chỗ tuần sau khớp ca mong muốn của bạn.',
+    setup: 'Đặt ca mong muốn để nhận cả tuần chỉ với một chạm.', setupButton: 'Đặt ca mong muốn', edit: 'Sửa',
+    button: 'Nhận ca tuần sau', confirmTitle: 'Nhận ca tuần sau?', confirm: 'Gửi',
+    confirmMsg: 'Gửi yêu cầu cho các ca còn chỗ tuần sau khớp ca mong muốn của bạn (không vượt số ca tối đa mỗi tuần).',
+    booked: '{n} ca đã xếp', requested: '{n} yêu cầu chờ duyệt', waitlisted: '{n} ca vào danh sách chờ', none: 'Không còn ca nào phù hợp tuần sau',
+  },
+  autoStaff: {
+    toggle: 'Tự xếp nhân viên vào ca tuần sau', toggleHint: 'Mỗi thứ 5 lúc 20:00, theo ca mong muốn của nhân viên. Bạn chỉnh lại sau nếu cần.',
+    now: 'Xếp ngay cho tuần sau', confirmTitle: 'Xếp ca tuần sau ngay?', confirm: 'Xếp ngay',
+    confirmMsg: 'Hệ thống xếp nhân viên vào các ca còn thiếu tuần sau theo ca mong muốn của họ và báo cho từng người.',
+    done: 'Đã xếp {assigned} lượt · {ideal}/{shifts} ca đủ người lý tưởng · {below} ca dưới mức tối thiểu',
   },
   advanced: {
     title: 'Nâng cao', heading: 'Phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',

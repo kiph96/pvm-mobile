@@ -1,12 +1,12 @@
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
-import type { ShiftView } from '@/api/types';
+import type { ShiftView, WeekRequestResult } from '@/api/types';
 import { StorePicker } from '@/components/domain';
 import { useAction } from '@/components/toast';
-import { Badge, Button, Card, Empty, Loading, Row, Screen, StaffingBar, Txt } from '@/components/ui';
+import { Badge, Button, Card, Empty, IconBubble, Loading, Row, Screen, StaffingBar, Txt, confirm } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
@@ -38,6 +38,18 @@ export default function FindShifts() {
     .filter((s) => s.status === 'published' && Date.parse(s.startsAt) > Date.now() && !myShiftIds.has(s.id));
   const days = [...new Set(open.map((s) => s.localDate))];
 
+  const prefs = useQuery({ queryKey: ['preferences', org, selected], queryFn: () => api.preferences(selected!), enabled: !!selected });
+  const hasPrefs = (prefs.data?.slots.length ?? 0) > 0;
+  const weekResult = (r: WeekRequestResult) => {
+    const parts = [r.booked ? t('week.booked', { n: r.booked }) : null, r.requested ? t('week.requested', { n: r.requested }) : null,
+      r.waitlisted ? t('week.waitlisted', { n: r.waitlisted }) : null].filter(Boolean);
+    return parts.length ? parts.join(' · ') : t('week.none');
+  };
+  const askWeek = async () => {
+    if (!selected || !await confirm(t('week.confirmTitle'), t('week.confirmMsg'), t('week.confirm'))) return;
+    run('week', () => api.requestWeek(selected), weekResult);
+  };
+
   const ask = (s: ShiftView) => run(s.id, () => api.registerForShift(s.id),
     (r) => r.status === 'approved' ? t('shift.booked') : r.status === 'waitlisted' ? t('find.fullWaitlist') : t('shift.requestSent'));
 
@@ -47,6 +59,25 @@ export default function FindShifts() {
       {employment?.currentWage ? (
         <Card tone="success" style={{ marginBottom: 14 }}>
           <Txt>{t('find.earn', { amount: wageText(employment.currentWage, employment.wageBasis, employment.currency), store: employment.storeName })}</Txt>
+        </Card>
+      ) : null}
+      {selected && prefs.data ? (
+        <Card style={{ gap: 12, marginBottom: 14 }}>
+          <Row>
+            <IconBubble icon="calendar-outline" tone="primary" />
+            <View style={{ flex: 1 }}>
+              <Txt variant="subheading">{t('week.title')}</Txt>
+              <Txt variant="small" muted>{hasPrefs ? t('week.hint') : t('week.setup')}</Txt>
+            </View>
+          </Row>
+          {hasPrefs ? (
+            <Row gap={8}>
+              <Button title={t('week.button')} icon="flash-outline" style={{ flex: 1 }} loading={busy === 'week'} onPress={askWeek} />
+              <Button small variant="ghost" title={t('week.edit')} onPress={() => router.push('/preferences')} />
+            </Row>
+          ) : (
+            <Button title={t('week.setupButton')} icon="options-outline" variant="secondary" full onPress={() => router.push('/preferences')} />
+          )}
         </Card>
       ) : null}
       {employments.isLoading || lists.some((l) => l.isLoading) ? <Loading /> : open.length === 0 ? (

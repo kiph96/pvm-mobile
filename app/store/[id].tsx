@@ -161,6 +161,13 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
         {auto.on ? (
           <Stepper label={t('storeSettings.daysAhead')} value={auto.days} min={7} max={28} onChange={(v) => setSchedule({ days_ahead: v })} />
         ) : null}
+        <Toggle label={t('autoStaff.toggle')} hint={t('autoStaff.toggleHint')} value={!!p.rules?.schedule?.auto_staff}
+          onChange={(v) => setSchedule({ auto_staff: v })} />
+        <Button small variant="secondary" icon="people-outline" title={t('autoStaff.now')} loading={busy === 'autostaff'}
+          onPress={async () => {
+            if (!await confirm(t('autoStaff.confirmTitle'), t('autoStaff.confirmMsg'), t('autoStaff.confirm'))) return;
+            run('autostaff', () => api.autoStaff(storeId), (r) => t('autoStaff.done', { assigned: r.assigned, ideal: r.atIdeal, shifts: r.shifts, below: r.belowMinimum }));
+          }} />
       </Card>
       <Card style={{ gap: 16 }}>
         <Txt variant="subheading">{t('storeSettings.signups')}</Txt>

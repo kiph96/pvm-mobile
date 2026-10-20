@@ -39,7 +39,7 @@ export interface PolicyRules {
   /** Sign-up window: opens N days before; with cutoff_enabled (default on) closes N minutes (default 15) before the start. */
   registration?: { opens_days_before?: number; cutoff_enabled?: boolean; closes_minutes_before?: number };
   /** Shifts made automatically from templates for the next days_ahead days (server defaults: on, 14, published). */
-  schedule?: { auto_generate?: boolean; days_ahead?: number; auto_publish?: boolean };
+  schedule?: { auto_generate?: boolean; days_ahead?: number; auto_publish?: boolean; auto_staff?: boolean };
   attendance?: { late_grace_minutes?: number; early_leave_grace_minutes?: number };
   points?: { allow_negative_balance?: boolean };
   violations?: Record<string, { points: number }>;
@@ -199,6 +199,25 @@ export interface PlanView {
   entitlement: string; appUserId: UUID; devPurchase: boolean;
   /** only the owner buys or changes the plan */
   canPurchase: boolean;
+}
+
+// ---------------------------------------------------------------- shift preferences + automatic staffing
+/** One preferred slot: this shift template on this ISO weekday (1 = Monday). */
+export interface PrefSlot { weekday: number; templateId: UUID }
+export interface ShiftPreferences {
+  storeId: UUID; employmentId: UUID;
+  /** null / absent = no weekly limit */
+  maxShiftsPerWeek?: number | null;
+  slots: PrefSlot[];
+  /** the store's active shift templates, to choose from (weekdays = days the shift exists) */
+  templates: { id: UUID; name: string; localStart: LocalTime; localEnd: LocalTime; weekdays: number[] }[];
+}
+export interface UpdatePreferences { storeId: UUID; maxShiftsPerWeek: number | null; slots: PrefSlot[] }
+/** Asking for next week's matching shifts in one tap. */
+export interface WeekRequestResult { weekStart: ISODate; matched: number; booked: number; requested: number; waitlisted: number; skipped: number }
+/** One automatic staffing run for a store's next week. */
+export interface AutoStaffResult {
+  storeId: UUID; weekStart: ISODate; shifts: number; assigned: number; atIdeal: number; belowMinimum: number; people: number;
 }
 
 // ---------------------------------------------------------------- sales on a shift

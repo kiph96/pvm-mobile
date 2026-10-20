@@ -27,6 +27,7 @@ export default function Me() {
   return (
     <Screen title={t('me.title')} onRefresh={() => { employments.refetch(); points.forEach((p) => p.refetch()); }} refreshing={false}>
       <ProfileMenu items={[
+        { title: t('prefs.menu'), subtitle: t('prefs.menuSub'), icon: 'calendar-outline', tone: 'primary', href: '/preferences' },
         { title: t('me.payslips'), subtitle: t('me.payslipsSub'), icon: 'wallet-outline', tone: 'success', href: '/payslips' },
         { title: t('more.notifications'), icon: 'notifications-outline', tone: 'info', href: '/notifications', badge: notifications.data?.filter((n) => !n.deliveredAt).length },
         { title: t('me.record'), icon: 'alert-circle-outline', tone: 'warning', href: '/violations' },

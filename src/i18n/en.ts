@@ -166,7 +166,7 @@ export const en = {
     myShifts: 'My shifts', swaps: 'Swaps', me: 'Me',
   },
   screens: {
-    shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
+    preferences: 'Shift preferences', shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
   },
   owner: {
@@ -284,6 +284,26 @@ export const en = {
     title: 'Close store', button: 'Close store', confirm: 'Close store', done: '{store} closed',
     note: 'For a store that has stopped trading for good. Shifts that have not started are cancelled, staff stop working here and are notified, and the join code stops working. Past shifts, sales and pay are kept; shifts already worked are still paid in the next payroll. Closed stores do not count toward your plan.',
     confirmTitle: 'Close {store}?', confirmMsg: 'This store cannot be reopened. Its upcoming shifts will be cancelled and staff notified.',
+  },
+  prefs: {
+    menu: 'Shift preferences', menuSub: 'The shifts you can usually work',
+    intro: 'Pick the shifts you can usually work. You can then ask for all of next week in one tap, and the store can book you on these shifts automatically.',
+    allWeek: 'Whole week', clear: 'Clear', perWeek: 'Limit shifts per week', perWeekHint: 'Never ask for or get more than this many',
+    max: 'At most per week', chosen: '{n} shifts a week selected', save: 'Save preferences', saved: 'Preferences saved',
+    noTemplates: 'No shift templates yet', noTemplatesMsg: 'Once the owner creates shift templates, pick your preferences here.',
+  },
+  week: {
+    title: 'Next week in one tap', hint: 'Ask for every open shift next week that matches your preferences.',
+    setup: 'Set your shift preferences to ask for a whole week in one tap.', setupButton: 'Set preferences', edit: 'Edit',
+    button: 'Ask for next week', confirmTitle: 'Ask for next week?', confirm: 'Send',
+    confirmMsg: 'Request every open shift next week that matches your preferences (never more than your weekly limit).',
+    booked: '{n} booked', requested: '{n} waiting for approval', waitlisted: '{n} on waitlist', none: 'No matching open shifts next week',
+  },
+  autoStaff: {
+    toggle: 'Staff next week automatically', toggleHint: "Every Thursday at 20:00, from the staff's shift preferences. Adjust afterwards if needed.",
+    now: 'Staff next week now', confirmTitle: 'Staff next week now?', confirm: 'Staff now',
+    confirmMsg: "Books staff on next week's shifts that still need people, from their preferences, and tells each person.",
+    done: '{assigned} bookings made · {ideal}/{shifts} shifts at ideal · {below} below minimum',
   },
   advanced: {
     title: 'Advanced', heading: 'Overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',

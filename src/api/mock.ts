@@ -163,6 +163,7 @@ export function createMockApi(actor: () => Actor): Api {
   };
   const userName = (uid: string) => db.users.find((u) => u.id === uid)?.displayName ?? 'Unknown';
   const memberOf = (e: Employment) => db.memberships.find((m) => m.id === e.membershipId)!;
+  const prefsOf: Record<string, { maxShiftsPerWeek: number | null; slots: T.PrefSlot[] }> = {};
   const emp = (eid: string) => db.employments.find((e) => e.id === eid) ?? fail(404, t('mock.notFound'));
   const shiftOf = (sid: string) => db.shifts.find((s) => s.id === sid && s.org === org()) ?? fail(404, t('mock.notFound'));
   const rateNow = (eid: string) => db.rates.filter((r) => r.employmentId === eid && !r.validTo).at(-1);
@@ -580,6 +581,25 @@ export function createMockApi(actor: () => Actor): Api {
       if (maxStaff < count) fail(409, t('mock.alreadyBooked', { n: count }));
       Object.assign(s, { minStaff, optimalStaff, maxStaff });
       return shiftView(s);
+    }),
+    preferences: (storeId) => wait(() => {
+      const m = member();
+      const e = db.employments.find((x) => x.membershipId === m.id && x.storeId === storeId && x.status === 'active') ?? fail(403, t('mock.notMember'));
+      const p = prefsOf[e.id] ?? { maxShiftsPerWeek: null, slots: [] };
+      return { storeId, employmentId: e.id, ...p, templates: db.templates.filter((x) => x.storeId === storeId && x.status === 'active')
+        .map((x) => ({ id: x.id, name: x.name, localStart: x.localStart, localEnd: x.localEnd, weekdays: x.weekdays })) };
+    }),
+    savePreferences: (req) => wait(() => {
+      const m = member();
+      const e = db.employments.find((x) => x.membershipId === m.id && x.storeId === req.storeId && x.status === 'active') ?? fail(403, t('mock.notMember'));
+      prefsOf[e.id] = { maxShiftsPerWeek: req.maxShiftsPerWeek, slots: req.slots };
+      return { storeId: req.storeId, employmentId: e.id, ...prefsOf[e.id], templates: db.templates.filter((x) => x.storeId === req.storeId && x.status === 'active')
+        .map((x) => ({ id: x.id, name: x.name, localStart: x.localStart, localEnd: x.localEnd, weekdays: x.weekdays })) };
+    }),
+    requestWeek: () => wait(() => ({ weekStart: localDate(7 - ((new Date().getDay() + 6) % 7)), matched: 0, booked: 0, requested: 0, waitlisted: 0, skipped: 0 })),
+    autoStaff: (storeId) => wait(() => {
+      manager();
+      return { storeId, weekStart: localDate(7 - ((new Date().getDay() + 6) % 7)), shifts: 0, assigned: 0, atIdeal: 0, belowMinimum: 0, people: 0 };
     }),
     registerForShift: (sid) => wait(() => {
       const m = member();

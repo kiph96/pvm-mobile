@@ -84,6 +84,7 @@ function AppStack() {
         <Stack.Screen name="violations" options={{ headerShown: true, title: t('screens.violations') }} />
         <Stack.Screen name="notifications" options={{ headerShown: true, title: t('screens.notifications') }} />
         <Stack.Screen name="payslips" options={{ headerShown: true, title: t('screens.payslips') }} />
+        <Stack.Screen name="preferences" options={{ headerShown: true, title: t('screens.preferences') }} />
         <Stack.Screen name="daily-digest" options={{ headerShown: true, title: t('screens.digest') }} />
         <Stack.Screen name="join" options={{ headerShown: true, title: t('screens.join'), presentation: 'modal' }} />
       </Stack>
