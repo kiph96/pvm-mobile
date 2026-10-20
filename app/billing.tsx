@@ -13,7 +13,7 @@ import { useTheme } from '@/theme';
 import { errorMessage, fullDate, money } from '@/utils/format';
 
 /**
- * The owner's app plan: free (1 store, up to 3 people) or Pro for N stores, bought in the app
+ * The owner's app plan: free (1 store, up to 4 people) or Pro for N stores, bought in the app
  * through the App Store / Google Play. Prices shown come from the store when it is reachable.
  */
 export default function Billing() {

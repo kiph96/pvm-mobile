@@ -245,7 +245,7 @@ export function createMockApi(actor: () => Actor): Api {
   };
 
   // Same pricing as the server's pvm.plan defaults
-  const PLAN = { freeMaxStores: 1, freeMaxEmployees: 3, basePrice: 9.99, includedStores: 3, extraStorePrice: 4.99, maxStores: 20 };
+  const PLAN = { freeMaxStores: 1, freeMaxEmployees: 4, basePrice: 9.99, includedStores: 1, extraStorePrice: 4.99, maxStores: 20 };
   const tier = (n: number): T.PlanTier => ({ storeQuota: n, productId: `pvm_pro_${n}`,
     monthlyPrice: Math.round((PLAN.basePrice + Math.max(0, n - PLAN.includedStores) * PLAN.extraStorePrice) * 100) / 100 });
   const usage = (o: string) => ({

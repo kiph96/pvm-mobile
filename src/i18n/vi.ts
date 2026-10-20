@@ -317,7 +317,7 @@ export const vi: Dict = {
     overLimit: 'Bạn đang dùng nhiều hơn gói hiện tại. Mọi thứ vẫn hoạt động, nhưng cần nâng cấp để thêm cửa hàng hoặc nhân viên.',
     pricing: 'Bảng giá', freeLine: '{stores} cửa hàng, tối đa {people} nhân viên.',
     ownerOnly: 'Chỉ chủ cửa hàng mới mua hoặc đổi gói.',
-    proLine: '{price}/tháng cho tối đa {n} cửa hàng, không giới hạn nhân viên. Từ cửa hàng thứ {from}: thêm {extra}/cửa hàng.',
+    proLine: '{price}/tháng gồm {n} cửa hàng, không giới hạn nhân viên. Từ cửa hàng thứ {from}: thêm {extra}/tháng mỗi cửa hàng.',
     upgrade: 'Nâng cấp lên Pro', change: 'Đổi gói', stores: 'Số cửa hàng', includes: 'Gồm tối đa {n} cửa hàng',
     breakdown: '{base} + {extra} × {each}', perMonth: ' /tháng', tooSmall: 'Bạn đang có {n} cửa hàng — gói này chưa đủ.',
     subscribe: 'Đăng ký Pro', switch: 'Chuyển sang gói này', yourPlan: 'Gói bạn đang dùng', restore: 'Khôi phục giao dịch',

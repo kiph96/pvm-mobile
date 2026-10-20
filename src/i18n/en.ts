@@ -316,7 +316,7 @@ export const en = {
     overLimit: 'You are using more than your plan covers. Everything keeps working, but you need to upgrade to add stores or staff.',
     pricing: 'Pricing', freeLine: '{stores} store, up to {people} staff.',
     ownerOnly: 'Only the owner can buy or change the plan.',
-    proLine: '{price}/month for up to {n} stores, unlimited staff. From store {from}: {extra} per extra store.',
+    proLine: '{price}/month includes {n} store, unlimited staff. From store {from}: {extra}/month for each extra store.',
     upgrade: 'Upgrade to Pro', change: 'Change plan', stores: 'Number of stores', includes: 'Includes up to {n} stores',
     breakdown: '{base} + {extra} × {each}', perMonth: ' /month', tooSmall: 'You have {n} stores — this plan is too small.',
     subscribe: 'Subscribe to Pro', switch: 'Switch to this plan', yourPlan: 'Your current plan', restore: 'Restore purchases',
