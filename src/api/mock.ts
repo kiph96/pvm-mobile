@@ -134,6 +134,9 @@ function seed() {
     runs: [] as T.RunView[], accessKeys: {} as Record<string, T.AccessKeyView>,
     digest: {} as Record<string, { enabled: boolean; sendAt: string; language: 'vi' | 'en' }>,
     report: {} as Record<string, { enabled: boolean; email: string | null; language: 'vi' | 'en' }>,
+    /** staffing plan: template id -> weekday -> min / ideal / max */
+    staffing: {} as Record<string, Record<number, { min: number; ideal: number; max: number }>>,
+    staffingProfiles: {} as Record<string, T.StaffingProfile>,
     // K Coffee House (2 stores, 5 people) pays for Pro 3 so the demo is not blocked; Lan Tea Corner is on the free plan
     sales: [] as (Omit<T.SaleView, 'displayName' | 'paid' | 'mine' | 'canVoid' | 'commissionPercent'> & { org: string; assignmentId: string; rate: number })[],
     plans: { [ORG1]: { productId: 'pvm_pro_3', storeQuota: 3, expiresAt: new Date(Date.now() + 20 * DAY).toISOString() } } as
@@ -322,7 +325,7 @@ export function createMockApi(actor: () => Actor): Api {
       for (const tp of db.templates.filter((x) => x.storeId === storeId && x.status === 'active' && x.weekdays.includes(isoWeekday(d)))) {
         if (db.shifts.some((s) => s.templateId === tp.id && s.localDate === d)) continue;
         const s = makeShift(storeId, d, tp.localStart, tp.localEnd, tp.id,
-          { min: tp.minStaff ?? p.minStaff, opt: tp.optimalStaff ?? p.optimalStaff, max: tp.maxStaff ?? p.maxStaff },
+          tplStaff(tp, isoWeekday(d), p),
           rules?.auto_publish === false ? 'draft' : 'published');
         if (Date.parse(s.startsAt) > Date.now()) db.shifts.push(s);
       }
@@ -520,7 +523,7 @@ export function createMockApi(actor: () => Actor): Api {
             continue;
           }
           const s = makeShift(storeId, d, t.localStart, t.localEnd, t.id,
-            { min: t.minStaff ?? p.minStaff, opt: t.optimalStaff ?? p.optimalStaff, max: t.maxStaff ?? p.maxStaff }, publish ? 'published' : 'draft');
+            tplStaff(t, isoWeekday(d), p), publish ? 'published' : 'draft');
           if (Date.parse(s.startsAt) <= Date.now()) {
             past++;
             continue;
@@ -885,6 +888,37 @@ export function createMockApi(actor: () => Actor): Api {
         title: () => d.title, availableAt: nowIso(), deliveredAt: null });
       return d;
     }),
+    staffingPlan: (storeId) => wait(() => { manager(); return staffingPlanView(storeId); }),
+    saveStaffingPlan: (storeId, cells) => wait(() => {
+      manager();
+      for (const c of cells) {
+        if (!(c.min <= c.ideal && c.ideal <= c.max)) fail(400, t('mock.staffingOrder'));
+        (db.staffing[c.templateId] ??= {})[c.weekday] = { min: c.min, ideal: c.ideal, max: c.max };
+      }
+      let updatedShifts = 0;
+      for (const s of db.shifts.filter((x) => x.storeId === storeId && x.templateId && Date.parse(x.startsAt) > Date.now()
+        && (x.status === 'draft' || x.status === 'published'))) {
+        const c = cells.find((x) => x.templateId === s.templateId && x.weekday === isoWeekday(s.localDate));
+        if (!c) continue;
+        const booked = db.assignments.filter((a) => a.shiftId === s.id && a.state !== 'cancelled').length;
+        Object.assign(s, { minStaff: c.min, optimalStaff: c.ideal, maxStaff: Math.max(c.max, booked) });
+        updatedShifts++;
+      }
+      return { plan: staffingPlanView(storeId), updatedShifts };
+    }),
+    suggestStaffing: (storeId, profile) => wait(() => {
+      manager();
+      db.staffingProfiles[storeId] = profile;
+      const store = db.stores.find((s) => s.id === storeId)!;
+      const ratio = ({ retail_fashion: 15, education: 15, finance_services: 6, manufacturing: 10 } as Record<string, number>)[store.businessType] ?? 12;
+      const cells: T.PlanCell[] = activeTemplates(storeId).flatMap((tp) => tp.weekdays.map((d) => {
+        const busyDay = profile.busyDays.includes(d), busyShift = profile.busyTemplateIds.includes(tp.id);
+        const share = busyDay && busyShift ? 1 : busyDay || busyShift ? 0.8 : 0.6;
+        const ideal = Math.max(1, 1 + (store.businessType === 'food_beverage' && profile.kitchen ? 1 : 0) + Math.ceil(profile.peakGuests * share / ratio));
+        return { templateId: tp.id, weekday: d, min: Math.max(1, Math.floor(ideal * 0.75)), ideal, max: ideal + 2 };
+      }));
+      return { cells, capacity: planCapacity(storeId, cells), cost: planCost(storeId, cells) };
+    }),
     // period report: the demo has no mail server, so it only "logs" (the app says so)
     reportSettings: () => wait(() => reportView(manager().id)),
     updateReportSettings: (enabled, email, language) => wait(() => {
@@ -906,6 +940,70 @@ export function createMockApi(actor: () => Actor): Api {
     unregisterDevice: () => wait(() => undefined),
     devices: () => wait(() => ({ active: 0 })),
   };
+
+  // ------------------------------------------------- staffing plan (demo)
+  function tplStaff(tp: T.TemplateView, weekday: number, p: T.PolicyView) {
+    const c = db.staffing[tp.id]?.[weekday];
+    return c ? { min: c.min, opt: c.ideal, max: c.max }
+      : { min: tp.minStaff ?? p.minStaff, opt: tp.optimalStaff ?? p.optimalStaff, max: tp.maxStaff ?? p.maxStaff };
+  }
+
+  const activeTemplates = (storeId: string) => db.templates.filter((x) => x.storeId === storeId && x.status === 'active');
+  const team = (storeId: string) => db.employments.filter((e) => e.storeId === storeId && e.status === 'active');
+  const minutesOf = (tp: T.TemplateView) => {
+    const [sh, sm] = tp.localStart.split(':').map(Number), [eh, em] = tp.localEnd.split(':').map(Number);
+    return (eh * 60 + em) - (sh * 60 + sm) + (tp.overnight ? 24 * 60 : 0);
+  };
+
+  function payPerShift(storeId: string, tp: T.TemplateView): number | null {
+    const wages = team(storeId).map((e) => rateNow(e.id)).filter((r): r is NonNullable<typeof r> => !!r);
+    if (!wages.length) return null;
+    return Math.round(wages.reduce((sum, r) => sum + (r.basis === 'per_shift' ? r.amount : r.amount * minutesOf(tp) / 60), 0) / wages.length);
+  }
+
+  function planCapacity(storeId: string, cells: T.PlanCell[]): T.PlanCapacity {
+    const slots = new Set(activeTemplates(storeId).flatMap((tp) => tp.weekdays.map((d) => `${tp.id}:${d}`)));
+    const offers = team(storeId).map((e) => {
+      const p = prefsOf[e.id];
+      const preferred = (p?.slots ?? []).filter((s) => slots.has(`${s.templateId}:${s.weekday}`)).length;
+      const limit = p?.maxShiftsPerWeek ?? null;
+      const shifts = limit != null && preferred > 0 ? Math.min(limit, preferred) : limit ?? (preferred > 0 ? preferred : 5);
+      return { shifts, stated: limit != null || preferred > 0 };
+    });
+    const needed = cells.reduce((n, c) => n + c.ideal, 0);
+    const offered = offers.reduce((n, o) => n + o.shifts, 0);
+    const stated = offers.filter((o) => o.stated);
+    const typical = Math.max(1, Math.round(stated.length ? stated.reduce((n, o) => n + o.shifts, 0) / stated.length : 5));
+    const shortfall = Math.max(0, needed - offered);
+    return { neededSlots: needed, minimumSlots: cells.reduce((n, c) => n + c.min, 0), offeredSlots: offered, people: offers.length,
+      peopleWithoutPreferences: offers.length - stated.length, typicalShiftsPerPerson: typical, shortfall,
+      suggestedHires: Math.ceil(shortfall / typical) };
+  }
+
+  function planCost(storeId: string, cells: T.PlanCell[]): T.PlanCost {
+    const store = db.stores.find((s) => s.id === storeId)!;
+    const people = team(storeId).filter((e) => rateNow(e.id)).length;
+    if (!people) return { weekly: null, currency: store.currency, peopleWithWage: 0 };
+    const tps = activeTemplates(storeId);
+    const weekly = cells.reduce((sum, c) => sum + c.ideal * (payPerShift(storeId, tps.find((x) => x.id === c.templateId)!) ?? 0), 0);
+    return { weekly, currency: store.currency, peopleWithWage: people };
+  }
+
+  function staffingPlanView(storeId: string): T.StaffingPlan {
+    const store = db.stores.find((s) => s.id === storeId)!;
+    const p = db.policies[storeId];
+    const volunteers: Record<string, number> = {};
+    team(storeId).forEach((e) => (prefsOf[e.id]?.slots ?? []).forEach((s) => { volunteers[`${s.templateId}:${s.weekday}`] = (volunteers[`${s.templateId}:${s.weekday}`] ?? 0) + 1; }));
+    const templates = activeTemplates(storeId).map((tp) => ({
+      templateId: tp.id, name: tp.name, localStart: tp.localStart, localEnd: tp.localEnd, minutes: minutesOf(tp), weekdays: tp.weekdays,
+      cells: tp.weekdays.map((d) => { const s = tplStaff(tp, d, p); return { templateId: tp.id, weekday: d, min: s.min, ideal: s.opt, max: s.max }; }),
+      volunteers: Object.fromEntries(tp.weekdays.map((d) => [String(d), volunteers[`${tp.id}:${d}`] ?? 0])),
+      payPerShift: payPerShift(storeId, tp),
+    }));
+    const cells = templates.flatMap((x) => x.cells);
+    return { storeId, businessType: store.businessType, templates, capacity: planCapacity(storeId, cells), cost: planCost(storeId, cells),
+      profile: db.staffingProfiles[storeId] ?? null };
+  }
 
   // ------------------------------------------------- period report (demo)
   function reportPref(membershipId: string) {

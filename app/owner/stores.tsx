@@ -62,7 +62,6 @@ export default function Stores() {
                   {p ? (
                     <Row gap={8} wrap>
                       <Badge label={t('stores.upTo', { n: p.employeeLimit })} icon="people-outline" />
-                      <Badge label={t('stores.perShift', { min: p.minStaff, opt: p.optimalStaff, max: p.maxStaff })} icon="layers-outline" />
                       <Badge label={p.registrationMode === 'automatic' ? t('stores.auto') : t('stores.youApprove')} icon="hand-right-outline" />
                     </Row>
                   ) : null}

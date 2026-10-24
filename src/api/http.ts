@@ -221,6 +221,12 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.DigestSettings>('PUT', '/me/daily-digest', { enabled, sendAt, language }),
     previewDigest: () => call<T.StaffingDigest>('POST', '/me/daily-digest/preview'),
     sendDigestNow: () => call<T.StaffingDigest>('POST', '/me/daily-digest/send-now'),
+    // people needed per shift and weekday (replaces the store-wide numbers)
+    staffingPlan: (storeId: string) => call<T.StaffingPlan>('GET', `/stores/${storeId}/staffing-plan`),
+    saveStaffingPlan: (storeId: string, cells: T.PlanCell[]) =>
+      call<{ plan: T.StaffingPlan; updatedShifts: number }>('PUT', `/stores/${storeId}/staffing-plan`, { cells }),
+    suggestStaffing: (storeId: string, profile: T.StaffingProfile) =>
+      call<T.StaffingSuggestion>('POST', `/stores/${storeId}/staffing-plan/suggest`, profile),
     // owner's email report after each payroll period
     reportSettings: () => call<T.ReportSettings>('GET', '/me/period-report'),
     updateReportSettings: (enabled: boolean, email: string | null, language: 'vi' | 'en') =>

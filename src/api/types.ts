@@ -187,6 +187,31 @@ export interface StaffingDigest {
   stores: { storeId: UUID; storeName: string; shifts: number; peopleMissing: number; problems: DigestShiftLine[] }[];
 }
 
+// --------------------------------------------------------------- staffing plan
+/** People needed for a shift template on an ISO weekday (1 = Monday). */
+export interface PlanCell { templateId: UUID; weekday: number; min: number; ideal: number; max: number }
+export interface TemplatePlan {
+  templateId: UUID; name: string; localStart: LocalTime; localEnd: LocalTime; minutes: number; weekdays: number[];
+  cells: PlanCell[];
+  /** weekday -> people who list this shift and day among their preferred shifts */
+  volunteers: Record<string, number>;
+  /** the team's average pay for one such shift; absent = no wages yet */
+  payPerShift?: number | null;
+}
+/** Slots per week: needed = sum of ideals; offered = what the team says it can work (5 for people who set nothing). */
+export interface PlanCapacity {
+  neededSlots: number; minimumSlots: number; offeredSlots: number; people: number; peopleWithoutPreferences: number;
+  typicalShiftsPerPerson: number; shortfall: number; suggestedHires: number;
+}
+export interface PlanCost { weekly?: number | null; currency: string; peopleWithWage: number }
+/** The owner's answers used to suggest the plan. */
+export interface StaffingProfile { peakGuests: number; kitchen: boolean; busyDays: number[]; busyTemplateIds: UUID[] }
+export interface StaffingPlan {
+  storeId: UUID; businessType: string; templates: TemplatePlan[]; capacity: PlanCapacity; cost: PlanCost;
+  profile?: StaffingProfile | null;
+}
+export interface StaffingSuggestion { cells: PlanCell[]; capacity: PlanCapacity; cost: PlanCost }
+
 // --------------------------------------------------------------- period report (email)
 /**
  * Owner's detailed email report after each payroll period (com.pvm.report); calendar months when the business has no

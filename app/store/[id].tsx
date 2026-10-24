@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import type { AccessKeyView, PolicyRules, PolicyView, StoreView } from '@/api/types';
 import { AccessKeyCard } from '@/components/accessKey';
+import { StaffingPlanSection } from '@/components/staffingPlan';
 import { AdvancedSettings } from '@/components/advancedSettings';
 import { BUSINESS_TYPES, BUSINESS_TYPE_ICON, businessIcon, isBusinessType, typeName, type BusinessType } from '@/components/businessType';
 import { codeLabel, useStores } from '@/components/domain';
@@ -93,6 +94,8 @@ export default function StoreSettings() {
           ))}
       </Section>
 
+      <StaffingPlanSection storeId={id} />
+
       {policy.data ? <PayRulesEditor storeId={id} policy={policy.data} /> : null}
       {policy.data ? <PolicyEditor storeId={id} policy={policy.data} /> : <Loading />}
       {policy.data ? <AdvancedSettings storeId={id} policy={policy.data} /> : null}
@@ -147,12 +150,6 @@ function PolicyEditor({ storeId, policy }: { storeId: string; policy: PolicyView
         <Stepper label={t('storeSettings.included')} value={p.employeeLimit} min={1} max={200} onChange={(v) => set('employeeLimit', v)} />
         <Toggle label={t('storeSettings.hardLimit')} hint={t('storeSettings.hardLimitHint')} value={p.employeeLimitMode === 'hard'}
           onChange={(v) => set('employeeLimitMode', v ? 'hard' : 'advisory')} />
-      </Card>
-      <Card style={{ gap: 16 }}>
-        <Txt variant="subheading">{t('storeSettings.defaultsTitle')}</Txt>
-        <Stepper label={t('shift.minimum')} value={p.minStaff} onChange={(v) => setP((x) => ({ ...x, minStaff: v, optimalStaff: Math.max(v, x.optimalStaff), maxStaff: Math.max(v, x.maxStaff) }))} />
-        <Stepper label={t('shift.ideal')} value={p.optimalStaff} onChange={(v) => setP((x) => ({ ...x, optimalStaff: v, minStaff: Math.min(v, x.minStaff), maxStaff: Math.max(v, x.maxStaff) }))} />
-        <Stepper label={t('shift.maximum')} value={p.maxStaff} min={1} onChange={(v) => setP((x) => ({ ...x, maxStaff: v, optimalStaff: Math.min(v, x.optimalStaff), minStaff: Math.min(v, x.minStaff) }))} />
       </Card>
       <Card style={{ gap: 16 }}>
         <Txt variant="subheading">{t('storeSettings.autoTitle')}</Txt>
