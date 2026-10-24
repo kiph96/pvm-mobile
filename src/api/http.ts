@@ -221,6 +221,12 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.DigestSettings>('PUT', '/me/daily-digest', { enabled, sendAt, language }),
     previewDigest: () => call<T.StaffingDigest>('POST', '/me/daily-digest/preview'),
     sendDigestNow: () => call<T.StaffingDigest>('POST', '/me/daily-digest/send-now'),
+    // owner's email report after each payroll period
+    reportSettings: () => call<T.ReportSettings>('GET', '/me/period-report'),
+    updateReportSettings: (enabled: boolean, email: string | null, language: 'vi' | 'en') =>
+      call<T.ReportSettings>('PUT', '/me/period-report', { enabled, email, language }),
+    previewReport: () => call<T.ReportPreview>('GET', '/me/period-report/preview'),
+    sendReportNow: () => call<T.ReportSendResult>('POST', '/me/period-report/send'),
     registerDevice: (expoPushToken: string, platform: 'ios' | 'android') =>
       call<{ active: number }>('POST', '/me/devices', { expoPushToken, platform }),
     unregisterDevice: (expoPushToken: string) => call<void>('POST', '/me/devices/unregister', { expoPushToken }),

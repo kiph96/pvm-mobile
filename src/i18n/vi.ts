@@ -170,6 +170,7 @@ export const vi: Dict = {
   screens: {
     preferences: 'Ca mong muốn', shift: 'Ca làm', employee: 'Nhân viên', store: 'Cài đặt cửa hàng', payroll: 'Bảng lương', billing: 'Gói dịch vụ',
     violations: 'Chuyên cần & vi phạm', notifications: 'Thông báo', payslips: 'Phiếu lương của tôi', join: 'Tham gia cửa hàng', digest: 'Báo cáo ca hằng ngày',
+    report: 'Báo cáo kỳ lương',
   },
   owner: {
     greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
@@ -311,6 +312,23 @@ export const vi: Dict = {
     title: 'Nâng cao', heading: 'Chấm công, phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',
     onList: 'Đang bật: {list}', attendanceOn: 'Chấm công', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%',
     save: 'Lưu cài đặt nâng cao', saved: 'Đã lưu cài đặt nâng cao',
+  },
+  report: {
+    menu: 'Báo cáo kỳ lương', menuSub: 'Email tổng kết sau mỗi kỳ lương',
+    intro: 'Sau mỗi kỳ lương, PVM gửi bạn một email tổng kết: lương, giờ làm, ca thiếu người, vắng mặt của từng cửa hàng và từng nhân viên.',
+    enabled: 'Gửi báo cáo qua email', enabledHint: 'Sáng hôm sau khi kỳ lương kết thúc, lúc 8:00',
+    email: 'Email nhận báo cáo', emailHint: 'Để trống để gửi về {email}', emailHintNone: 'Tài khoản chưa có email: hãy nhập email nhận báo cáo',
+    language: 'Ngôn ngữ của email', saved: 'Đã lưu cài đặt báo cáo', off: 'Đang tắt báo cáo kỳ lương',
+    next: 'Báo cáo tiếp theo: kỳ {label}, gửi {when}',
+    followsMonths: 'Bạn chưa tạo kỳ lương nên báo cáo theo tháng dương lịch, gửi sáng ngày 1 hằng tháng.',
+    followsPeriods: 'Báo cáo theo các kỳ lương bạn tạo trong Bảng lương.',
+    noNext: 'Chưa có kỳ lương sắp tới: tạo kỳ lương tiếp theo trong Bảng lương để nhận báo cáo.',
+    last: 'Lần gửi gần nhất: kỳ {label} tới {to}, {when}', lastFailed: 'Lần gửi gần nhất thất bại (kỳ {label}): kiểm tra địa chỉ email.',
+    noMail: 'Máy chủ chưa được cấu hình gửi email: báo cáo hiện chỉ được ghi lại, chưa tới hộp thư.',
+    preview: 'Xem trước', previewOf: 'Kỳ gần nhất: {label}', final: 'Đã chạy lương', estimate: 'Lương ước tính (chưa chạy lương)',
+    sendNow: 'Gửi báo cáo kỳ {label} cho tôi', sent: 'Đã gửi báo cáo tới {email}', logged: 'Đã tạo báo cáo (máy chủ chưa gửi email)',
+    phonePreview: 'Mở email để xem bảng chi tiết từng cửa hàng và nhân viên.',
+    badEmail: 'Email không hợp lệ', demoPreview: 'Bản demo không gửi email. Kết nối máy chủ để xem báo cáo thật.',
   },
   attendance: {
     title: 'Chấm công vào / ra',

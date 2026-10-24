@@ -133,6 +133,7 @@ function seed() {
     attendance: [] as (T.AttendanceView & { org: string })[], periods: [] as (T.PeriodView & { org: string })[],
     runs: [] as T.RunView[], accessKeys: {} as Record<string, T.AccessKeyView>,
     digest: {} as Record<string, { enabled: boolean; sendAt: string; language: 'vi' | 'en' }>,
+    report: {} as Record<string, { enabled: boolean; email: string | null; language: 'vi' | 'en' }>,
     // K Coffee House (2 stores, 5 people) pays for Pro 3 so the demo is not blocked; Lan Tea Corner is on the free plan
     sales: [] as (Omit<T.SaleView, 'displayName' | 'paid' | 'mine' | 'canVoid' | 'commissionPercent'> & { org: string; assignmentId: string; rate: number })[],
     plans: { [ORG1]: { productId: 'pvm_pro_3', storeQuota: 3, expiresAt: new Date(Date.now() + 20 * DAY).toISOString() } } as
@@ -884,10 +885,52 @@ export function createMockApi(actor: () => Actor): Api {
         title: () => d.title, availableAt: nowIso(), deliveredAt: null });
       return d;
     }),
+    // period report: the demo has no mail server, so it only "logs" (the app says so)
+    reportSettings: () => wait(() => reportView(manager().id)),
+    updateReportSettings: (enabled, email, language) => wait(() => {
+      const m = manager();
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(400, t('report.badEmail'));
+      db.report[m.id] = { enabled, email: email?.trim().toLowerCase() || null, language };
+      return reportView(m.id);
+    }),
+    previewReport: () => wait(() => {
+      const p = reportPeriod();
+      return { subject: `PVM · ${p.label}`, html: `<p style="font-family:sans-serif">${t('report.demoPreview')}</p>`, periodLabel: p.label,
+        periodStart: p.start, periodEnd: p.end, payrollFinal: false };
+    }),
+    sendReportNow: () => wait(() => {
+      const pref = reportPref(manager().id);
+      return { recipient: pref.email ?? 'demo@pvm.local', status: 'logged' as const, periodLabel: reportPeriod().label };
+    }),
     registerDevice: () => wait(() => ({ active: 1 })),
     unregisterDevice: () => wait(() => undefined),
     devices: () => wait(() => ({ active: 0 })),
   };
+
+  // ------------------------------------------------- period report (demo)
+  function reportPref(membershipId: string) {
+    return db.report[membershipId] ?? { enabled: member().role === 'owner', email: null, language: 'vi' as const };
+  }
+
+  const monthLabel = (d: Date) => `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+  /** Last calendar month (the demo has no payroll periods to follow). */
+  function reportPeriod() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { label: monthLabel(start), start: start.toISOString(), end: end.toISOString() };
+  }
+
+  function reportView(membershipId: string): T.ReportSettings {
+    const p = reportPref(membershipId);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return { ...p, accountEmail: 'demo@pvm.local', timezone: 'Asia/Ho_Chi_Minh', mailConfigured: false, followsPayrollPeriods: false,
+      next: p.enabled ? { periodLabel: monthLabel(start), periodStart: start.toISOString(), periodEnd: end.toISOString(),
+        sendAt: new Date(end.getTime() + 8 * 3_600_000).toISOString() } : null, last: null };
+  }
 
   // ------------------------------------------------- daily digest (demo)
   function digestPref(membershipId: string) {

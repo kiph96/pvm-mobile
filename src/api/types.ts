@@ -187,6 +187,23 @@ export interface StaffingDigest {
   stores: { storeId: UUID; storeName: string; shifts: number; peopleMissing: number; problems: DigestShiftLine[] }[];
 }
 
+// --------------------------------------------------------------- period report (email)
+/**
+ * Owner's detailed email report after each payroll period (com.pvm.report); calendar months when the business has no
+ * payroll periods. email null = the account email. mailConfigured false = the server only logs reports for now.
+ */
+export interface ReportSettings {
+  enabled: boolean; email?: string | null; accountEmail?: string | null; language: 'vi' | 'en'; timezone: string;
+  mailConfigured: boolean; followsPayrollPeriods: boolean;
+  next?: { periodLabel: string; periodStart: ISODateTime; periodEnd: ISODateTime; sendAt: ISODateTime } | null;
+  last?: { periodLabel: string; sentAt: ISODateTime; recipient: string; status: 'sent' | 'logged' | 'failed' } | null;
+}
+/** The latest completed period's report email (nothing sent). */
+export interface ReportPreview {
+  subject: string; html: string; periodLabel: string; periodStart: ISODateTime; periodEnd: ISODateTime; payrollFinal: boolean;
+}
+export interface ReportSendResult { recipient: string; status: 'sent' | 'logged'; periodLabel: string }
+
 // ---------------------------------------------------------------- app plan (in-app purchase)
 /** Pro for up to storeQuota stores; productId is the App Store / Play product. */
 export interface PlanTier { storeQuota: number; monthlyPrice: number; productId: string }

@@ -169,6 +169,7 @@ export const en = {
   screens: {
     preferences: 'Shift preferences', shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
+    report: 'Period report',
   },
   owner: {
     greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', team: 'Team', shortToday: 'Short today',
@@ -310,6 +311,23 @@ export const en = {
     title: 'Advanced', heading: 'Clock in/out, overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
     onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%',
     save: 'Save advanced settings', saved: 'Advanced settings saved',
+  },
+  report: {
+    menu: 'Period report', menuSub: 'Email summary after each pay period',
+    intro: 'After each pay period PVM emails you a summary: pay, hours, understaffed shifts and absences for every store and every employee.',
+    enabled: 'Email me the report', enabledHint: 'The morning after the pay period ends, at 8:00',
+    email: 'Send to', emailHint: 'Leave empty to use {email}', emailHintNone: 'Your account has no email: enter one to receive the report',
+    language: 'Email language', saved: 'Report settings saved', off: 'Period report is off',
+    next: 'Next report: {label}, sent {when}',
+    followsMonths: 'You have no pay periods yet, so the report follows calendar months and arrives on the morning of the 1st.',
+    followsPeriods: 'The report follows the pay periods you create in Payroll.',
+    noNext: 'No upcoming pay period: create the next one in Payroll to get a report.',
+    last: 'Last sent: {label} to {to}, {when}', lastFailed: 'Last report failed ({label}): check the email address.',
+    noMail: 'The server has no mail service configured yet: reports are recorded but not delivered.',
+    preview: 'Preview', previewOf: 'Latest period: {label}', final: 'Payroll run', estimate: 'Estimated pay (payroll not run)',
+    sendNow: 'Email me the {label} report', sent: 'Report sent to {email}', logged: 'Report created (the server does not send email yet)',
+    phonePreview: 'Open the email to see the detailed tables per store and employee.',
+    badEmail: 'Invalid email address', demoPreview: 'The demo does not send email. Connect to a server to see a real report.',
   },
   attendance: {
     title: 'Clock in / out',
