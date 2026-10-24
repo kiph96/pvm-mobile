@@ -3,6 +3,7 @@
 // two owners (K Coffee, Lan Tea), three stores, shifts
 // generated around today, requests, swaps, attendance, points and payroll.
 import { t } from '@/i18n';
+import { startOfWeek, today } from '@/utils/format';
 import { DEFAULT_PAY, estimatePay, payRulesOf, type WageBasis } from '@/utils/pay';
 
 import { ApiError, type Actor, type Api } from './http';
@@ -35,7 +36,11 @@ interface Enrollment { id: string; org: string; storeId: string; userId: string;
 interface Violation extends T.ViolationView { org: string }
 interface Points { id: string; employmentId: string; delta: number; kind: string; reason: string; effectiveAt: string }
 /** title is a function so it is rendered in the language chosen when the feed is read. */
-interface Notice { id: string; org: string; to: string; eventType: string; title: () => string; availableAt: string; deliveredAt: string | null }
+/** Like the server: code + params rendered by the app (notify.<code>); title only for texts with no code. */
+interface Notice {
+  id: string; org: string; to: string; eventType: string; code: string | null; params: Record<string, string | number>;
+  title: (() => string) | null; availableAt: string; deliveredAt: string | null;
+}
 
 const U = (n: number) => `10000000-0000-4000-8000-00000000000${n}`;
 const ORG1 = 'a0000000-0000-4000-8000-000000000001';
@@ -217,8 +222,8 @@ export function createMockApi(actor: () => Actor): Api {
     employmentId: eid, balance: balance(eid),
     entries: db.points.filter((p) => p.employmentId === eid).map(({ employmentId: _e, ...p }) => p),
   });
-  const notify = (to: string, eventType: string, title: () => string) =>
-    db.notices.unshift({ id: id('27'), org: org(), to, eventType, title, availableAt: nowIso(), deliveredAt: null });
+  const notify = (to: string, eventType: string, code: string, params: Record<string, string | number> = {}) =>
+    db.notices.unshift({ id: id('27'), org: org(), to, eventType, code, params, title: null, availableAt: nowIso(), deliveredAt: null });
   const ownerOf = (o: string) => db.memberships.find((m) => m.org === o && m.role === 'owner')!.userId;
   const overlaps = (membershipId: string, s: Shift) =>
     db.assignments.some((a) => {
@@ -408,7 +413,7 @@ export function createMockApi(actor: () => Actor): Api {
       const x: Enrollment = { id: id('c1'), org: store.org, storeId: store.id, userId: me(), status: 'pending', requestedAt: nowIso(), decidedAt: null, employmentId: null };
       db.enrollments.push(x);
       db.notices.unshift({ id: id('27'), org: store.org, to: ownerOf(store.org), eventType: 'alert.enrollment.pending',
-        title: () => t('mock.nWantsJoin', { name: userName(x.userId), store: store.name }), availableAt: nowIso(), deliveredAt: null });
+        code: 'joinRequested', params: { name: userName(x.userId), store: store.name }, title: null, availableAt: nowIso(), deliveredAt: null });
       return enrollmentView(x);
     }),
     myEnrollments: () => wait(() => db.enrollments
@@ -434,7 +439,7 @@ export function createMockApi(actor: () => Actor): Api {
       db.employments.push(e);
       Object.assign(x, { status: 'approved', decidedAt: nowIso(), employmentId: e.id });
       const storeName = db.stores.find((s) => s.id === x.storeId)!.name;
-      notify(x.userId, 'alert.enrollment.approved', () => t('mock.nCanPick', { store: storeName }));
+      notify(x.userId, 'notify.enrollment.approved', 'joinApproved', { store: storeName });
       return enrollmentView(x);
     }),
     rejectEnrollment: (eid) => wait(() => {
@@ -569,7 +574,7 @@ export function createMockApi(actor: () => Actor): Api {
       s.status = 'cancelled';
       db.assignments.filter((a) => a.shiftId === sid && a.state === 'assigned').forEach((a) => {
         a.state = 'cancelled';
-        notify(memberOf(emp(a.employmentId)).userId, 'alert.shift.cancelled', () => t('mock.nShiftCancelled', { date: s.localDate }));
+        notify(memberOf(emp(a.employmentId)).userId, 'notify.shift.cancelled', 'shiftCancelled', { date: s.localDate });
       });
       return shiftView(s);
     }),
@@ -616,7 +621,7 @@ export function createMockApi(actor: () => Actor): Api {
         Object.assign(r, { status: 'approved', decidedAt: nowIso(), assignmentId: a.id });
       } else {
         const who = userName(me());
-        notify(ownerOf(s.org), 'alert.shift_request.pending', () => t('mock.nAskedShift', { name: who, date: s.localDate }));
+        notify(ownerOf(s.org), 'alert.shift_request.pending', 'shiftRequested', { name: who, date: s.localDate });
       }
       db.requests.push(r);
       return requestView(r);
@@ -632,7 +637,7 @@ export function createMockApi(actor: () => Actor): Api {
       const a = book(shiftOf(r.shiftId), emp(r.employmentId));
       Object.assign(r, { status: 'approved', decidedAt: nowIso(), assignmentId: a.id });
       const date = shiftOf(r.shiftId).localDate;
-      notify(memberOf(emp(r.employmentId)).userId, 'alert.shift_request.approved', () => t('mock.nGotShift', { date }));
+      notify(memberOf(emp(r.employmentId)).userId, 'notify.shift_request.approved', 'shiftScheduled', { date });
       return requestView(r);
     }),
     rejectRequest: (rid) => wait(() => {
@@ -679,7 +684,8 @@ export function createMockApi(actor: () => Actor): Api {
         expiresAt: db.shifts.find((x) => x.id === from.shiftId)!.startsAt, acceptedAt: null, decidedAt: null, newFrom: null, newTo: null };
       db.swaps.unshift(s);
       const who = userName(me());
-      notify(memberOf(emp(to.employmentId)).userId, 'alert.swap.requested', () => t('mock.nSwapAsk', { name: who }));
+      notify(memberOf(emp(to.employmentId)).userId, 'notify.shift_swap.proposed', 'swapProposed',
+        { name: who, from: shiftOf(from.shiftId).localDate, to: shiftOf(to.shiftId).localDate });
       return swapView(s);
     }),
     swaps: (status) => wait(() => {
@@ -705,13 +711,13 @@ export function createMockApi(actor: () => Actor): Api {
           Object.assign(s, { status: 'accepted', acceptedBy: me(), acceptedAt: nowIso() });
           const storeId = db.shifts.find((x) => x.id === from.shiftId)!.storeId;
           if (!db.policies[storeId].swapApprovalRequired) exchange();
-          else notify(ownerOf(s.org), 'alert.swap.accepted', () => t('mock.nSwapWaiting'));
+          else notify(ownerOf(s.org), 'alert.shift_swap.needs_approval', 'swapNeedsApproval');
           break;
         case 'approve':
           manager();
           s.approvedBy = me();
           exchange();
-          notify(s.requestedBy, 'alert.swap.approved', () => t('mock.nSwapApproved'));
+          notify(s.requestedBy, 'notify.shift_swap.approved', 'swapApproved');
           break;
         case 'decline':
         case 'reject':
@@ -768,7 +774,7 @@ export function createMockApi(actor: () => Actor): Api {
       if (action === 'confirm' && v.points) {
         db.points.push({ id: id('21'), employmentId: v.employmentId, delta: v.points, kind: 'violation', reason: `${v.code}: ${v.description}`, effectiveAt: nowIso() });
         const { code, points } = v;
-        notify(memberOf(emp(v.employmentId)).userId, 'alert.violation.confirmed', () => t('mock.nViolation', { code: t(`code.${code}`), n: points }));
+        notify(memberOf(emp(v.employmentId)).userId, 'notify.violation.confirmed', 'violationRecorded', { code, n: points });
       }
       if (action === 'reverse' && v.points) {
         db.points.push({ id: id('21'), employmentId: v.employmentId, delta: -v.points, kind: 'reversal', reason: `Reversed ${v.code}`, effectiveAt: nowIso() });
@@ -783,7 +789,7 @@ export function createMockApi(actor: () => Actor): Api {
       const e = emp(employmentId);
       const delta = req.points ?? db.policies[e.storeId].rules?.awards?.[req.code ?? '']?.points ?? fail(400, t('mock.unknownAward'));
       db.points.push({ id: id('21'), employmentId, delta, kind: 'award', reason: req.reason, effectiveAt: nowIso() });
-      notify(memberOf(e).userId, 'alert.points.awarded', () => t('mock.nPoints', { n: delta, reason: req.reason }));
+      notify(memberOf(e).userId, 'notify.points.awarded', 'pointsAwarded', { n: delta, reason: req.reason });
       return pointsView(employmentId);
     }),
 
@@ -857,7 +863,8 @@ export function createMockApi(actor: () => Actor): Api {
       return planView(org());
     }),
     notifications: () => wait(() => db.notices.filter((n) => n.org === org() && n.to === me())
-      .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title(), payload: {}, availableAt: n.availableAt, deliveredAt: n.deliveredAt }))),
+      .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title?.() ?? null, code: n.code, params: n.params, payload: {},
+        availableAt: n.availableAt, deliveredAt: n.deliveredAt }))),
 
     digestSettings: () => wait(() => digestView(manager().id)),
     updateDigestSettings: (enabled, sendAt, language) => wait(() => {
@@ -870,8 +877,8 @@ export function createMockApi(actor: () => Actor): Api {
       const m = manager();
       const lang = digestPref(m.id).language;
       const d = buildDigest(lang);
-      db.notices.unshift({ id: id('27'), org: org(), to: me(), eventType: 'digest.daily_staffing', title: () => d.title,
-        availableAt: nowIso(), deliveredAt: null });
+      db.notices.unshift({ id: id('27'), org: org(), to: me(), eventType: 'digest.daily_staffing', code: null, params: {},
+        title: () => d.title, availableAt: nowIso(), deliveredAt: null });
       return d;
     }),
     registerDevice: () => wait(() => ({ active: 1 })),
@@ -1053,13 +1060,15 @@ function populate(db: Db) {
       return n + estimatePay(payRulesOf(db.policies[sh.storeId].rules), a.basis, a.wage, sh.startsAt.slice(11, 16), sh.endsAt.slice(11, 16)).total;
     }, 0), currency: 'VND', unresolvedTimesheets: 0 });
   // notifications
-  const n = (org: string, to: string, eventType: string, title: () => string, hoursAgo: number) =>
-    db.notices.push({ id: id('27'), org, to, eventType, title, availableAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(), deliveredAt: null });
-  n(ORG1, U(1), 'alert.enrollment.pending', () => t('mock.nWantsJoin', { name: 'Hoang Thu Em', store: 'K Coffee - District 1' }), 5);
-  n(ORG1, U(1), 'alert.swap.accepted', () => t('mock.nBinhChi'), 2);
-  n(ORG1, U(1), 'alert.shift.understaffed', () => t('mock.nUnderstaffed'), 1);
-  n(ORG1, U(3), 'alert.points.awarded', () => t('mock.nPoints', { n: 10, reason: t('code.ON_TIME_STREAK_10') }), 96);
-  n(ORG1, U(5), 'alert.violation.confirmed', () => t('mock.nViolation', { code: t('code.LATE'), n: -5 }), 144);
-  n(ORG1, U(5), 'alert.swap.requested', () => t('mock.nSwapAsk', { name: 'Pham Quoc Binh' }), 3);
-  n(ORG2, U(6), 'alert.schedule.published', () => t('mock.nPublished'), 20);
+  const n = (org: string, to: string, eventType: string, code: string | null, params: Record<string, string | number>, hoursAgo: number,
+    title: (() => string) | null = null) =>
+    db.notices.push({ id: id('27'), org, to, eventType, code, params, title, availableAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(), deliveredAt: null });
+  n(ORG1, U(1), 'alert.enrollment.pending', 'joinRequested', { name: 'Hoang Thu Em', store: 'K Coffee - District 1' }, 5);
+  n(ORG1, U(1), 'alert.shift_swap.needs_approval', 'swapNeedsApproval', {}, 2);
+  n(ORG1, U(1), 'alert.shift.understaffed', 'shiftUnderstaffed', { date: today(1), assigned: 1, min: 2 }, 1);
+  n(ORG1, U(3), 'notify.points.awarded', 'pointsAwarded', { n: 10, reason: 'ON_TIME_STREAK_10' }, 96);
+  n(ORG1, U(5), 'notify.violation.confirmed', 'violationRecorded', { code: 'LATE', n: -5 }, 144);
+  n(ORG1, U(5), 'notify.shift_swap.proposed', 'swapProposed', { name: 'Pham Quoc Binh', from: today(2), to: today(3) }, 3);
+  n(ORG1, U(5), 'notify.auto_staff.assigned', 'autoStaffAssigned', { n: 3, week: startOfWeek(today(7)), store: 'K Coffee - District 1' }, 4);
+  n(ORG2, U(6), 'alert.schedule.published', null, {}, 20, () => t('mock.nPublished'));
 }

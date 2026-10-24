@@ -3,8 +3,9 @@ import { View } from 'react-native';
 
 import { Card, Empty, ErrorState, IconBubble, Loading, Row, Screen, Txt, type IconName, type Tone } from '@/components/ui';
 import { useI18n } from '@/i18n';
+import { notificationText } from '@/notifications/text';
 import { useNotifications } from '@/state/queries';
-import { ago, titleCase } from '@/utils/format';
+import { ago } from '@/utils/format';
 
 function look(eventType: string): { icon: IconName; tone: Tone } {
   if (eventType.includes('swap')) return { icon: 'swap-horizontal', tone: 'info' };
@@ -30,7 +31,7 @@ export default function Notifications() {
                   <Row>
                     <IconBubble icon={l.icon} tone={l.tone} size={38} />
                     <View style={{ flex: 1 }}>
-                      <Txt>{n.title ?? titleCase(n.eventType.replace('alert.', ''))}</Txt>
+                      <Txt>{notificationText(n)}</Txt>
                       <Txt variant="small" muted>{ago(n.availableAt)}</Txt>
                     </View>
                   </Row>

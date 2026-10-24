@@ -161,8 +161,10 @@ export interface Payslip {
   employmentId: UUID; userId: UUID; displayName: string; storeId: UUID; storeName: string; currency: string;
   wages: number; bonuses: number; adjustments: number; commissions: number; gross: number; lines: PayslipLine[];
 }
+/** title is the server's English text; render code + params (i18n `notify.<code>`) when present. */
 export interface NotificationView {
-  id: UUID; eventType: string; title: string | null; payload: Record<string, unknown>;
+  id: UUID; eventType: string; title: string | null;
+  code?: string | null; params?: Record<string, string | number | null>; payload: Record<string, unknown>;
   availableAt: ISODateTime; deliveredAt: ISODateTime | null;
 }
 
