@@ -40,7 +40,8 @@ export interface PolicyRules {
   registration?: { opens_days_before?: number; cutoff_enabled?: boolean; closes_minutes_before?: number };
   /** Shifts made automatically from templates for the next days_ahead days (server defaults: on, 14, published). */
   schedule?: { auto_generate?: boolean; days_ahead?: number; auto_publish?: boolean; auto_staff?: boolean };
-  attendance?: { late_grace_minutes?: number; early_leave_grace_minutes?: number };
+  /** Clock in / clock out (default off). When on, the pay rules' hour options decide which hours are paid. */
+  attendance?: { enabled?: boolean; late_grace_minutes?: number; early_leave_grace_minutes?: number };
   points?: { allow_negative_balance?: boolean };
   violations?: Record<string, { points: number }>;
   awards?: Record<string, { points: number }>;
@@ -63,6 +64,8 @@ export interface MyEmploymentView {
   employmentId: UUID; storeId: UUID; storeName: string; storeTimeZone: string; role: string; status: string;
   startedAt: ISODateTime; currentWage: number | null; wageBasis: string | null; currency: string;
   storeAddress: string | null;
+  /** Staff clock in and out at this store (its attendance setting). */
+  attendance?: boolean;
 }
 /** My own join request (employee side), named so it reads well before approval. */
 export interface MyEnrollmentView {

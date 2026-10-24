@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
+import type { AttendanceView } from '@/api/types';
 import { SHIFT_TONE, StatusBadge, useStores } from '@/components/domain';
 import { SalesCard } from '@/components/salesCard';
 import { useAction } from '@/components/toast';
@@ -12,7 +13,7 @@ import {
 import { tv, useI18n } from '@/i18n';
 import { useOrgKey, useTemplateNames } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
-import { ago, dateTime, dayLabel, hoursBetween, money, signupState, timeRange } from '@/utils/format';
+import { ago, dateTime, dayLabel, hoursBetween, money, signupState, time, timeRange } from '@/utils/format';
 import { wageText } from '@/utils/pay';
 
 export default function ShiftScreen() {
@@ -27,6 +28,18 @@ export default function ShiftScreen() {
   const [staffOpen, setStaffOpen] = useState(false);
   const q = useQuery({ queryKey: ['shift', org, id], queryFn: () => api.shift(id) });
   const names = useTemplateNames(q.data?.shift.storeId ?? null);
+  // stores with clock in / out: the owner sees when each person clocked, once the shift has started
+  const storeId = q.data?.shift.storeId;
+  const policy = useQuery({ queryKey: ['policy', org, storeId], queryFn: () => api.policy(storeId!), enabled: isManager && !!storeId });
+  const clocked = isManager && !!q.data && Date.parse(q.data.shift.startsAt) <= Date.now() && !!policy.data?.rules?.attendance?.enabled;
+  const clockQueries = useQueries({
+    queries: (clocked ? q.data!.assignments : []).map((a) => ({ queryKey: ['attendance', org, a.id], queryFn: () => api.attendance(a.id) })),
+  });
+  const clockLine = (assignmentId: string) => {
+    if (!clocked) return null;
+    const events = clockQueries[q.data!.assignments.findIndex((a) => a.id === assignmentId)]?.data;
+    return events ? clockText(events, t) : null;
+  };
 
   if (q.isLoading) return <Screen><Loading /></Screen>;
   if (q.error || !q.data) return <Screen><ErrorState error={q.error} onRetry={q.refetch} /></Screen>;
@@ -93,7 +106,8 @@ export default function ShiftScreen() {
         {assignments.length === 0 ? <Empty icon="person-outline" title={t('shift.nobody')} message={isManager ? t('shift.nobodyMgr') : t('shift.nobodyStaff')} />
           : assignments.map((a) => (
             <ListItem key={a.id} title={a.displayName}
-              subtitle={[a.wageAmount != null ? wageText(a.wageAmount, a.wageBasis, a.currency) : null, a.replacesAssignmentId ? t('common.viaSwap') : null]
+              subtitle={[a.wageAmount != null ? wageText(a.wageAmount, a.wageBasis, a.currency) : null, a.replacesAssignmentId ? t('common.viaSwap') : null,
+                clockLine(a.id)]
                 .filter(Boolean).join(' · ') || undefined}
               left={<Avatar name={a.displayName} />}
               right={swapFrom && a.userId !== session?.userId ? (
@@ -201,4 +215,13 @@ function StaffingSheet({ visible, onClose, shiftId, initial }: { visible: boolea
         onPress={async () => { if (await run('save', () => api.updateStaffing(shiftId, min, opt, max), t('shift.staffingSaved'))) onClose(); }} />
     </Sheet>
   );
+}
+
+/** "In 08:03 · Out 13:01" from a person's clock events on a shift. */
+function clockText(events: AttendanceView[], t: (key: string, params?: Record<string, string | number>) => string) {
+  const clockIn = events.find((e) => e.type === 'clock_in');
+  const clockOut = [...events].reverse().find((e) => e.type === 'clock_out');
+  if (!clockIn) return t('attendance.none');
+  return clockOut ? t('attendance.times', { in: time(clockIn.occurredAt), out: time(clockOut.occurredAt) })
+    : t('attendance.inOnly', { in: time(clockIn.occurredAt) });
 }

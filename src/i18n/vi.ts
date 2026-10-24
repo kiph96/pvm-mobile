@@ -129,6 +129,7 @@ export const vi: Dict = {
     swap_expired: 'Yêu cầu đổi ca đã hết hạn.',
     swap_closed: 'Yêu cầu đổi ca đã kết thúc.',
     swap_pending: 'Ca này đang có yêu cầu đổi khác.',
+    attendance_off: 'Cửa hàng này không dùng chấm công.',
     same_person: 'Hãy chọn ca của đồng nghiệp khác.',
     same_shift: 'Hai ca phải khác nhau.',
     unknown_violation_code: 'Loại vi phạm không có trong quy định cửa hàng.',
@@ -307,9 +308,18 @@ export const vi: Dict = {
     done: 'Đã xếp {assigned} lượt · {ideal}/{shifts} ca đủ người lý tưởng · {below} ca dưới mức tối thiểu',
   },
   advanced: {
-    title: 'Nâng cao', heading: 'Phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',
-    onList: 'Đang bật: {list}', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%',
+    title: 'Nâng cao', heading: 'Chấm công, phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',
+    onList: 'Đang bật: {list}', attendanceOn: 'Chấm công', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%',
     save: 'Lưu cài đặt nâng cao', saved: 'Đã lưu cài đặt nâng cao',
+  },
+  attendance: {
+    title: 'Chấm công vào / ra',
+    hint: 'Nhân viên bấm Chấm công vào / ra trên điện thoại. Khi tắt, không cần chấm công và lương tính theo giờ của ca.',
+    lateGrace: 'Cho phép đi trễ (phút)', earlyGrace: 'Cho phép về sớm (phút)',
+    graceHint: 'Trễ hoặc về sớm quá số phút này bị ghi vi phạm và trừ điểm theo Hệ thống điểm.',
+    payHint: 'Chọn tính lương theo giờ của ca hay giờ chấm công ở mục Lương.',
+    payOff: 'Chưa bật chấm công: lương tính theo giờ của ca. Bật Chấm công trong mục Nâng cao để chọn cách tính giờ.',
+    times: 'Vào {in} · Ra {out}', inOnly: 'Vào {in} · chưa chấm ra', none: 'Chưa chấm công',
   },
   storeInfo: {
     type: 'Loại hình',
@@ -430,7 +440,7 @@ export const vi: Dict = {
     alreadyAsked: 'Bạn đã xin ca này rồi', alreadyOn: 'Bạn đã có trong ca này', staffingOrder: 'Số người phải theo thứ tự tối thiểu ≤ lý tưởng ≤ tối đa',
     alreadyBooked: 'Đã có {n} người được xếp', onlyDraft: 'Chỉ công bố được ca nháp', alreadyState: 'Ca đã ở trạng thái {s}',
     onlyUpcoming: 'Chỉ huỷ được ca chưa diễn ra', ownShift: 'Bạn chỉ có thể đổi ca của mình', colleague: 'Hãy chọn ca của đồng nghiệp',
-    unknownAward: 'Không rõ loại thưởng', notFound: 'Không tìm thấy',
+    unknownAward: 'Không rõ loại thưởng', notFound: 'Không tìm thấy', attendanceOff: 'Cửa hàng này không dùng chấm công',
     nPublished: 'Đã công bố ca Night Owl tuần sau', plan: 'Gói Tiêu chuẩn', planStores: 'Cửa hàng (cao nhất trong tháng)', planPeople: 'Nhân viên (cao nhất trong tháng)',
   },
 };

@@ -106,7 +106,7 @@ function seed() {
   ];
   const baseRules: T.PolicyRules = {
     registration: { opens_days_before: 14, cutoff_enabled: true, closes_minutes_before: 15 },
-    attendance: { late_grace_minutes: 5, early_leave_grace_minutes: 5 },
+    attendance: { enabled: false, late_grace_minutes: 5, early_leave_grace_minutes: 5 },
     points: { allow_negative_balance: true },
     violations: { LATE: { points: -5 }, NO_SHOW: { points: -20 }, EARLY_LEAVE: { points: -3 }, MISSED_CLOCK_OUT: { points: -2 } },
     awards: { PERFECT_SHIFT: { points: 2 }, ON_TIME_STREAK_10: { points: 10 } },
@@ -458,7 +458,8 @@ export function createMockApi(actor: () => Actor): Api {
         const s = db.stores.find((x) => x.id === e.storeId)!;
         const r = rateNow(e.id);
         return { employmentId: e.id, storeId: s.id, storeName: s.name, storeTimeZone: s.timezone, role: 'employee', status: e.status,
-          startedAt: e.startedAt, currentWage: r?.amount ?? null, wageBasis: r?.basis ?? null, currency: s.currency, storeAddress: s.address };
+          startedAt: e.startedAt, currentWage: r?.amount ?? null, wageBasis: r?.basis ?? null, currency: s.currency, storeAddress: s.address,
+          attendance: !!db.policies[s.id]?.rules?.attendance?.enabled };
       });
     }),
     setRate: (employmentId, amount, basis) => wait(() => {
@@ -732,6 +733,8 @@ export function createMockApi(actor: () => Actor): Api {
 
     clock: (assignmentId, type) => wait(() => {
       const a = db.assignments.find((x) => x.id === assignmentId) ?? fail(404, t('mock.notFound'));
+      const storeId = db.shifts.find((x) => x.id === a.shiftId)?.storeId ?? '';
+      if (!db.policies[storeId]?.rules?.attendance?.enabled) fail(409, t('mock.attendanceOff'));
       const ev = { id: id('e0'), org: org(), assignmentId, type, occurredAt: nowIso(), receivedAt: nowIso(), source: 'employee' };
       db.attendance.push(ev);
       if (type === 'clock_out') a.state = 'completed';

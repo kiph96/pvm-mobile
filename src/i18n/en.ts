@@ -128,6 +128,7 @@ export const en = {
     swap_expired: 'The swap request expired.',
     swap_closed: 'The swap is already closed.',
     swap_pending: 'This shift already has a pending swap.',
+    attendance_off: 'This store does not use clock in / out.',
     same_person: "Pick a colleague's shift.",
     same_shift: 'Pick two different shifts.',
     unknown_violation_code: "This violation type isn't in the store rules.",
@@ -306,9 +307,18 @@ export const en = {
     done: '{assigned} bookings made · {ideal}/{shifts} shifts at ideal · {below} below minimum',
   },
   advanced: {
-    title: 'Advanced', heading: 'Overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
-    onList: 'On: {list}', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%',
+    title: 'Advanced', heading: 'Clock in/out, overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
+    onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%',
     save: 'Save advanced settings', saved: 'Advanced settings saved',
+  },
+  attendance: {
+    title: 'Clock in / out',
+    hint: 'Staff tap Clock in / out on their phone. When off, nobody clocks in and pay follows the shift hours.',
+    lateGrace: 'Late arrival allowed (minutes)', earlyGrace: 'Early leave allowed (minutes)',
+    graceHint: 'Later or earlier than this is recorded as a violation and costs points per the points system.',
+    payHint: 'Choose whether pay follows the shift hours or the clocked hours under Pay.',
+    payOff: 'Clock in/out is off: pay follows the shift hours. Turn on Clock in/out under Advanced to choose how hours count.',
+    times: 'In {in} · Out {out}', inOnly: 'In {in} · not clocked out', none: 'Not clocked in',
   },
   storeInfo: {
     type: 'Business type',
@@ -429,7 +439,7 @@ export const en = {
     alreadyAsked: 'You already asked for this shift', alreadyOn: 'You are already on this shift', staffingOrder: 'Staffing must be min ≤ optimal ≤ max',
     alreadyBooked: '{n} people are already booked', onlyDraft: 'Only draft shifts can be published', alreadyState: 'The shift is already {s}',
     onlyUpcoming: 'Only upcoming assignments can be cancelled', ownShift: 'You can only offer your own shift', colleague: "Pick a colleague's shift",
-    unknownAward: 'Unknown award', notFound: 'Not found',
+    unknownAward: 'Unknown award', notFound: 'Not found', attendanceOff: 'This store does not use clock in / out',
     nPublished: "Next week's Night Owl shifts are published", plan: 'Standard plan', planStores: 'Stores (monthly peak)', planPeople: 'Employees (monthly peak)',
   },
 };

@@ -15,9 +15,16 @@ const NIGHT_STARTS = ['21:00', '22:00', '23:00'];
 const NIGHT_ENDS = ['05:00', '06:00', '07:00'];
 
 type Sales = NonNullable<PolicyRules['sales']>;
+type Attendance = { enabled: boolean; late_grace_minutes: number; early_leave_grace_minutes: number };
+
+const attendanceOf = (rules: PolicyRules | null | undefined): Attendance => ({
+  enabled: !!rules?.attendance?.enabled,
+  late_grace_minutes: rules?.attendance?.late_grace_minutes ?? 5,
+  early_leave_grace_minutes: rules?.attendance?.early_leave_grace_minutes ?? 5,
+});
 
 /**
- * Extras most stores do not need: overtime pay, night pay and sales commission. All off for a new store;
+ * Extras most stores do not need: clock in / out, overtime pay, night pay and sales commission. All off for a new store;
  * the section stays folded until the owner opens it (its header says which extras are on).
  */
 export function AdvancedSettings({ storeId, policy }: { storeId: string; policy: PolicyView }) {
@@ -31,21 +38,25 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
   const [overtime, setOvertime] = useState<PayRulesJson['overtime']>(savedPay.overtime);
   const [night, setNight] = useState<PayRulesJson['night']>(savedPay.night);
   const [sales, setSales] = useState<Sales>(savedSales);
+  const savedAttendance = attendanceOf(policy.rules);
+  const [attendance, setAttendance] = useState<Attendance>(savedAttendance);
   useEffect(() => {
     const p = payRulesOf(policy.rules);
     setOvertime(p.overtime);
     setNight(p.night);
     setSales({ enabled: !!policy.rules?.sales?.enabled, commission_percent: policy.rules?.sales?.commission_percent ?? 2 });
+    setAttendance(attendanceOf(policy.rules));
   }, [policy]);
-  const dirty = JSON.stringify([overtime, night, sales]) !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales]);
-  const on = [savedPay.overtime ? t('advanced.overtimeOn') : null, savedPay.night ? t('advanced.nightOn') : null,
+  const dirty = JSON.stringify([overtime, night, sales, attendance])
+    !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales, savedAttendance]);
+  const on = [savedAttendance.enabled ? t('advanced.attendanceOn') : null, savedPay.overtime ? t('advanced.overtimeOn') : null, savedPay.night ? t('advanced.nightOn') : null,
     savedSales.enabled ? t('advanced.salesOn', { n: pct(savedSales.commission_percent ?? 2) }) : null].filter(Boolean);
 
   const save = () => run('advanced', () => api.updatePolicy(storeId, {
     employeeLimit: policy.employeeLimit, employeeLimitMode: policy.employeeLimitMode, minStaff: policy.minStaff,
     optimalStaff: policy.optimalStaff, maxStaff: policy.maxStaff, registrationMode: policy.registrationMode,
     swapApprovalRequired: policy.swapApprovalRequired,
-    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales },
+    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales, attendance },
   }), t('advanced.saved'));
 
   return (
@@ -63,6 +74,21 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
       </Pressable>
       {open ? (
         <Card style={{ gap: 18 }}>
+          <View style={{ gap: 10 }}>
+            <Toggle label={t('attendance.title')} hint={t('attendance.hint')} value={attendance.enabled}
+              onChange={(v) => setAttendance({ ...attendance, enabled: v })} />
+            {attendance.enabled ? (
+              <>
+                <Stepper label={t('attendance.lateGrace')} value={attendance.late_grace_minutes} min={0} max={60}
+                  onChange={(m) => setAttendance({ ...attendance, late_grace_minutes: m })} />
+                <Stepper label={t('attendance.earlyGrace')} value={attendance.early_leave_grace_minutes} min={0} max={60}
+                  onChange={(m) => setAttendance({ ...attendance, early_leave_grace_minutes: m })} />
+                <Txt variant="small" muted>{t('attendance.graceHint')}</Txt>
+                <Txt variant="small" muted>{t('attendance.payHint')}</Txt>
+              </>
+            ) : null}
+          </View>
+
           <View style={{ gap: 10 }}>
             <Toggle label={t('pay.overtime')} hint={t('pay.overtimeHint')} value={!!overtime}
               onChange={(v) => setOvertime(v ? OVERTIME_DEFAULT : null)} />

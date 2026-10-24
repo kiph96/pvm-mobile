@@ -10,9 +10,6 @@ import { DEFAULT_PAY, estimatePay, hoursText, payRulesOf, wageText, type PayRule
 import { useAction } from './toast';
 import { Badge, Button, Card, Chip, Row, Section, Segmented, Toggle, Txt } from './ui';
 
-/** Mirrors PayRules.HOUR_OPTIONS_ENABLED on the server: off = these controls are hidden and defaults apply. */
-const HOUR_OPTIONS = false;
-
 const EXAMPLES: [string, string][] = [['08:00', '12:00'], ['14:00', '23:00'], ['18:00', '02:00']];
 const EXAMPLE_RATE = 30000;
 
@@ -30,6 +27,8 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
   useEffect(() => setPay(policy.rules?.pay ? payRulesOf(policy.rules) : DEFAULT_PAY), [policy]);
   const dirty = legacy || JSON.stringify(pay) !== JSON.stringify(saved);
   const set = <K extends keyof PayRulesJson>(k: K, v: PayRulesJson[K]) => setPay((p) => ({ ...p, [k]: v }));
+  // hour options only matter when staff clock in (Advanced > Clock in/out); the server ignores them otherwise
+  const hourOptions = !!policy.rules?.attendance?.enabled;
 
   const [exStart, exEnd] = EXAMPLES[example];
   const est = estimatePay(pay, 'hourly', EXAMPLE_RATE, exStart, exEnd);
@@ -54,9 +53,8 @@ export function PayRulesEditor({ storeId, policy }: { storeId: string; policy: P
           <Txt variant="small" muted>{t('pay.basisHint')}</Txt>
         </View>
 
-        {/* hour options (paid hours, rounding, breaks, minimum) and the example are switched off for now:
-            payroll uses the defaults (the server ignores the stored values too) */}
-        {HOUR_OPTIONS ? (
+        {!hourOptions ? <Txt variant="small" muted>{t('attendance.payOff')}</Txt> : null}
+        {hourOptions ? (
           <>
             <View style={{ gap: 8 }}>
               <Txt variant="subheading">{t('pay.source')}</Txt>
