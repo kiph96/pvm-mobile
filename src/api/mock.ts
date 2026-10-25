@@ -140,7 +140,9 @@ function seed() {
     // K Coffee House (2 stores, 5 people) pays for Pro 3 so the demo is not blocked; Lan Tea Corner is on the free plan
     sales: [] as (Omit<T.SaleView, 'displayName' | 'paid' | 'mine' | 'canVoid' | 'commissionPercent'> & { org: string; assignmentId: string; rate: number })[],
     plans: { [ORG1]: { productId: 'pvm_pro_3', storeQuota: 3, expiresAt: new Date(Date.now() + 20 * DAY).toISOString() } } as
-      Record<string, { productId: string; storeQuota: number; expiresAt: string }> };
+      Record<string, { productId: string; storeQuota: number; expiresAt: string }>,
+    /** promo code grants per business (the demo's one code is KTECH2M: 2 months, any number of stores) */
+    promos: {} as Record<string, T.PlanPromo> };
 }
 
 type Db = ReturnType<typeof seed>;
@@ -264,7 +266,10 @@ export function createMockApi(actor: () => Actor): Api {
   });
   const allowance = (o: string) => {
     const s = db.plans[o];
-    return s && Date.parse(s.expiresAt) > Date.now() ? { plan: 'pro' as const, stores: s.storeQuota, employees: null }
+    const promo = db.promos[o];
+    const quota = Math.max(s && Date.parse(s.expiresAt) > Date.now() ? s.storeQuota : 0,
+      promo && Date.parse(promo.expiresAt) > Date.now() ? promo.storeQuota : 0);
+    return quota > 0 ? { plan: 'pro' as const, stores: quota, employees: null }
       : { plan: 'free' as const, stores: PLAN.freeMaxStores, employees: PLAN.freeMaxEmployees as number | null };
   };
   const requireRoom = (o: string, addStores: number, addEmployees: number) => {
@@ -288,7 +293,9 @@ export function createMockApi(actor: () => Actor): Api {
       overLimit: u.stores > a.stores || (a.employees != null && u.employees > a.employees),
       tiers: Array.from({ length: PLAN.maxStores - PLAN.includedStores + 1 }, (_, i) => tier(PLAN.includedStores + i)),
       entitlement: 'pro', appUserId: o, devPurchase: true,
-      canPurchase: member().role === 'owner' };
+      canPurchase: member().role === 'owner',
+      promo: db.promos[o] ? { ...db.promos[o], active: Date.parse(db.promos[o].expiresAt) > Date.now() } : null,
+      canRedeemPromo: member().role === 'owner' && !db.promos[o] && !(s && Date.parse(s.expiresAt) > Date.now()) };
   };
 
   // ---- sales (same rules as the server's SalesService)
@@ -868,6 +875,18 @@ export function createMockApi(actor: () => Actor): Api {
       const n = Math.max(PLAN.includedStores, storeQuota);
       db.plans[org()] = { productId: `pvm_pro_${n}`, storeQuota: n, expiresAt: new Date(Date.now() + 30 * DAY).toISOString() };
       return planView(org());
+    }),
+    redeemPromo: (code) => wait(() => {
+      if (member().role !== 'owner') fail(403, t('errors.forbidden'));
+      const o = org();
+      if (db.promos[o]) fail(409, t('errors.promo_already_used'), 'promo_already_used');
+      const s = db.plans[o];
+      if (s && Date.parse(s.expiresAt) > Date.now()) fail(409, t('errors.promo_not_for_subscribers'), 'promo_not_for_subscribers');
+      if (code.trim().toUpperCase() !== 'KTECH2M') fail(422, t('errors.promo_invalid'), 'promo_invalid');
+      const now = new Date();
+      const until = new Date(now); until.setMonth(until.getMonth() + 2);
+      db.promos[o] = { code: 'KTECH2M', redeemedAt: now.toISOString(), expiresAt: until.toISOString(), storeQuota: PLAN.maxStores, active: true };
+      return planView(o);
     }),
     notifications: () => wait(() => db.notices.filter((n) => n.org === org() && n.to === me())
       .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title?.() ?? null, code: n.code, params: n.params, payload: {},

@@ -246,7 +246,13 @@ export interface PlanView {
   entitlement: string; appUserId: UUID; devPurchase: boolean;
   /** only the owner buys or changes the plan */
   canPurchase: boolean;
+  /** the owner's promo code grant, running or ended (null = never used one) */
+  promo?: PlanPromo | null;
+  /** the viewer is the owner, never used a promo code and is not paying */
+  canRedeemPromo: boolean;
 }
+/** Pro for storeQuota stores from a promo code, free until expiresAt. */
+export interface PlanPromo { code: string; redeemedAt: ISODateTime; expiresAt: ISODateTime; storeQuota: number; active: boolean }
 
 // ---------------------------------------------------------------- shift preferences + automatic staffing
 /** One preferred slot: this shift template on this ISO weekday (1 = Monday). */

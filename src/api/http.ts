@@ -213,6 +213,7 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     voidSale: (saleId: string, reason?: string) => call<T.ShiftSales>('POST', `/sales/${saleId}/void`, { reason: reason ?? null }),
     syncPlan: () => call<T.PlanView>('POST', '/billing/plan/sync'),
     devPurchase: (storeQuota: number) => call<T.PlanView>('POST', '/billing/plan/dev-purchase', { storeQuota }),
+    redeemPromo: (code: string) => call<T.PlanView>('POST', '/billing/plan/promo', { code }),
     notifications: () => call<T.NotificationView[]>('GET', '/notifications'),
 
     // owner's evening digest + push devices

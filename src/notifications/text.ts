@@ -23,6 +23,8 @@ export function notificationText(n: Pick<NotificationView, 'eventType' | 'title'
       if (typeof p[k] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p[k] as string)) p[k] = dayLabel(p[k] as string);
     }
     if (p.amount != null) p.amount = money(Number(p.amount), (p.currency as string) ?? 'VND');
+    // a wage comes with its type: "28.000 ₫ / giờ" or "180.000 ₫ / ca"
+    if (p.basis === 'hourly' || p.basis === 'per_shift') p.amount = t(p.basis === 'hourly' ? 'pay.perHour' : 'common.perShift', { amount: p.amount as string });
     if (typeof p.code === 'string') p.code = codeText(p.code);
     if (typeof p.reason === 'string') p.reason = codeText(p.reason);
     if (typeof p.reward === 'string') p.reward = codeText(p.reward);

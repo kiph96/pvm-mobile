@@ -5,7 +5,7 @@ import { Linking, Platform, View } from 'react-native';
 import type { PlanTier, PlanView } from '@/api/types';
 import { buy, manageUrl, purchasesAvailable, restore, storePrices } from '@/billing/purchases';
 import { useAction, useToast } from '@/components/toast';
-import { Badge, Button, Card, ErrorState, IconBubble, Loading, Row, Screen, Section, Stepper, Txt } from '@/components/ui';
+import { Badge, Button, Card, ErrorState, Field, IconBubble, Loading, Row, Screen, Section, Stepper, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
@@ -27,6 +27,7 @@ export default function Billing() {
       {plan.isLoading ? <Loading /> : plan.error ? <ErrorState error={plan.error} onRetry={plan.refetch} /> : p ? (
         <>
           <CurrentPlan p={p} />
+          {p.canRedeemPromo ? <PromoCode /> : null}
           <PriceGuide p={p} />
           <Choose p={p} />
         </>
@@ -40,13 +41,15 @@ function CurrentPlan({ p }: { p: PlanView }) {
   const { t } = useI18n();
   const s = p.subscription;
   const pro = p.plan === 'pro';
+  // Pro from a promo code (and no paid plan running): say until when it is free
+  const promoOnly = p.promo?.active && !s?.active;
   return (
     <Section title={t('plan.current')} style={{ marginTop: 12 }}>
       <Card style={{ gap: 12 }} tone={p.overLimit ? 'warning' : undefined}>
         <Row>
           <IconBubble icon={pro ? 'diamond' : 'leaf-outline'} tone={pro ? 'accent' : 'success'} size={46} />
           <View style={{ flex: 1 }}>
-            <Txt variant="heading">{pro ? t('plan.proN', { n: p.storeLimit }) : t('plan.free')}</Txt>
+            <Txt variant="heading">{promoOnly ? t('plan.proPromo') : pro ? t('plan.proN', { n: p.storeLimit }) : t('plan.free')}</Txt>
             <Txt variant="small" muted>
               {t('plan.usage', { stores: p.stores, storeLimit: p.storeLimit, employees: p.employees })}
               {p.employeeLimit != null ? ` / ${p.employeeLimit}` : ` · ${t('plan.unlimitedStaff')}`}
@@ -54,7 +57,12 @@ function CurrentPlan({ p }: { p: PlanView }) {
           </View>
           {s?.environment === 'sandbox' ? <Badge label={t('plan.test')} tone="info" /> : null}
         </Row>
-        {s && pro ? (
+        {promoOnly ? (
+          <Row gap={8}>
+            <Badge label={t('plan.promoBadge')} tone="success" icon="gift-outline" />
+            <Txt variant="small" muted style={{ flex: 1 }}>{t('plan.promoUntil', { date: fullDate(p.promo!.expiresAt), code: p.promo!.code })}</Txt>
+          </Row>
+        ) : s && pro ? (
           <Txt variant="small" muted>
             {s.willRenew ? t('plan.renews', { date: fullDate(s.expiresAt) }) : t('plan.endsOn', { date: fullDate(s.expiresAt) })}
             {s.store && s.provider !== 'dev' ? ` · ${storeName(s.store)}` : ''}
@@ -62,7 +70,31 @@ function CurrentPlan({ p }: { p: PlanView }) {
         ) : s && !s.active ? (
           <Txt variant="small" muted>{t('plan.expired', { date: fullDate(s.expiresAt) })}</Txt>
         ) : null}
+        {p.promo && !p.promo.active ? <Txt variant="small" muted>{t('plan.promoEnded', { code: p.promo.code, date: fullDate(p.promo.expiresAt) })}</Txt> : null}
         {p.overLimit ? <Txt variant="small">{t('plan.overLimit')}</Txt> : null}
+      </Card>
+    </Section>
+  );
+}
+
+/** Owner without a paid plan who never used a code: enter one for free months of Pro. */
+function PromoCode() {
+  const api = useApi();
+  const { t } = useI18n();
+  const [run, busy] = useAction();
+  const [code, setCode] = useState('');
+  return (
+    <Section title={t('plan.promoTitle')}>
+      <Card style={{ gap: 12 }}>
+        <Row>
+          <IconBubble icon="gift-outline" tone="success" size={40} />
+          <Txt variant="small" muted style={{ flex: 1 }}>{t('plan.promoHint')}</Txt>
+        </Row>
+        <Field label={t('plan.promoLabel')} value={code} onChangeText={(v) => setCode(v.toUpperCase())} autoCapitalize="characters"
+          autoCorrect={false} placeholder="ABC123" maxLength={32} />
+        <Button title={t('plan.promoApply')} icon="checkmark" full disabled={code.trim().length < 3} loading={busy === 'promo'}
+          onPress={() => run('promo', () => api.redeemPromo(code.trim()),
+            (r) => t('plan.promoApplied', { date: r.promo ? fullDate(r.promo.expiresAt) : '' }))} />
       </Card>
     </Section>
   );
@@ -99,7 +131,9 @@ function Choose({ p }: { p: PlanView }) {
   const s = p.subscription;
   const min = p.tiers[0]?.storeQuota ?? p.includedStores;
   const max = p.tiers.at(-1)?.storeQuota ?? min;
-  const suggested = Math.min(max, Math.max(min, p.neededTier?.storeQuota ?? 0, p.plan === 'pro' ? p.storeLimit : 0, p.stores));
+  // a running paid plan, not a promo grant, is what "change plan" starts from
+  const paying = !!s?.active;
+  const suggested = Math.min(max, Math.max(min, p.neededTier?.storeQuota ?? 0, paying ? p.storeLimit : 0, p.stores));
   const [n, setN] = useState(suggested);
   useEffect(() => setN(suggested), [suggested]);
   const tier: PlanTier | undefined = p.tiers.find((x) => x.storeQuota === n);
@@ -110,7 +144,7 @@ function Choose({ p }: { p: PlanView }) {
     queryFn: () => storePrices(p.appUserId, p.tiers.map((x) => x.productId)),
   });
   const product = tier ? prices.data?.[tier.productId] : undefined;
-  const current = p.plan === 'pro' && s?.productId === tier?.productId;
+  const current = paying && s?.productId === tier?.productId;
   const extra = Math.max(0, n - p.includedStores);
 
   const purchase = async () => {
@@ -127,7 +161,7 @@ function Choose({ p }: { p: PlanView }) {
   };
 
   return (
-    <Section title={p.plan === 'pro' ? t('plan.change') : t('plan.upgrade')}>
+    <Section title={paying ? t('plan.change') : t('plan.upgrade')}>
       <Card style={{ gap: 14 }}>
         <Stepper label={t('plan.stores')} value={n} min={min} max={max} onChange={setN} />
         {tier ? (
@@ -154,7 +188,7 @@ function Choose({ p }: { p: PlanView }) {
         ) : canBuy ? (
           <>
             <Button full icon={current ? 'checkmark-circle' : 'card-outline'} loading={busy === 'buy'} disabled={current || !tier}
-              title={current ? t('plan.yourPlan') : p.plan === 'pro' ? t('plan.switch') : t('plan.subscribe')} onPress={purchase} />
+              title={current ? t('plan.yourPlan') : paying ? t('plan.switch') : t('plan.subscribe')} onPress={purchase} />
             <Row gap={8}>
               <Button small variant="ghost" title={t('plan.restore')} icon="refresh" loading={busy === 'restore'} style={{ flex: 1 }}
                 onPress={() => run('restore', async () => { await restore(p.appUserId); return api.syncPlan(); }, t('plan.restored'))} />
