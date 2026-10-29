@@ -18,6 +18,7 @@ export default function OwnerMore() {
         { title: t('more.violations'), subtitle: t('more.violationsSub'), icon: 'alert-circle-outline', tone: 'warning', href: '/violations', badge: violations.data?.length },
         { title: t('more.notifications'), icon: 'notifications-outline', tone: 'info', href: '/notifications', badge: notifications.data?.filter((n) => !n.deliveredAt).length },
         { title: t('more.billing'), subtitle: t('more.billingSub'), icon: 'card-outline', tone: 'accent', href: '/billing' },
+        { title: t('privacy.menu'), subtitle: t('privacy.menuSub'), icon: 'shield-checkmark-outline', tone: 'success', href: '/privacy' },
       ]} />
     </Screen>
   );

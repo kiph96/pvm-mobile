@@ -32,6 +32,7 @@ export default function Me() {
         { title: t('more.notifications'), icon: 'notifications-outline', tone: 'info', href: '/notifications', badge: notifications.data?.filter((n) => !n.deliveredAt).length },
         { title: t('me.record'), icon: 'alert-circle-outline', tone: 'warning', href: '/violations' },
         { title: t('me.joinAnother'), subtitle: t('me.joinAnotherSub'), icon: 'key-outline', tone: 'accent', href: '/join' },
+        { title: t('privacy.menu'), subtitle: t('privacy.menuSub'), icon: 'shield-checkmark-outline', tone: 'success', href: '/privacy' },
       ]} />
 
       <Section title={t('me.myStores')}>

@@ -238,6 +238,11 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<{ active: number }>('POST', '/me/devices', { expoPushToken, platform }),
     unregisterDevice: (expoPushToken: string) => call<void>('POST', '/me/devices/unregister', { expoPushToken }),
     devices: () => call<{ active: number }>('GET', '/me/devices'),
+    // personal data consent and data-right requests (per person, not per business)
+    privacy: () => call<T.PrivacyState>('GET', '/me/privacy'),
+    savePrivacy: (req: T.GiveConsent) => call<T.PrivacyState>('PUT', '/me/privacy', req),
+    privacyRequest: (kind: T.DataRequestKind, note?: string) =>
+      call<T.PrivacyState>('POST', '/me/privacy/requests', { kind, note: note ?? null }),
   };
 }
 

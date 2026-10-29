@@ -44,3 +44,10 @@ export function useMyAccounts() {
   return useQuery({ queryKey: ['my-orgs', session?.userId], queryFn: api.myOrganizations, enabled: !!session });
 }
 
+
+/** The signed-in person's personal data consent (per person, so not keyed by business). */
+export function usePrivacy() {
+  const api = useApi();
+  const { session } = useSession();
+  return useQuery({ queryKey: ['privacy', session?.userId], queryFn: api.privacy, enabled: !!session, staleTime: 5 * 60_000 });
+}

@@ -12,6 +12,7 @@ import { ToastProvider } from '@/components/toast';
 import { ConfirmHost } from '@/components/ui';
 import { I18nProvider, useI18n } from '@/i18n';
 import { useNotificationRouting } from '@/notifications/useNotificationRouting';
+import { usePrivacy } from '@/state/queries';
 import { SessionProvider, useSession } from '@/state/session';
 import { useTheme } from '@/theme';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -54,6 +55,7 @@ function AppStack() {
   const { t } = useI18n();
   useNotificationRouting();
   useSignedOutRedirect();
+  useConsentGate();
   // Navigator chrome (screen backgrounds during transitions, headers) uses the same palette.
   const base = dark ? DarkTheme : DefaultTheme;
   const navTheme = { ...base, dark, colors: { ...base.colors, primary: colors.primary, background: colors.background,
@@ -73,6 +75,7 @@ function AppStack() {
       }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="sign-in" />
+        <Stack.Screen name="consent" options={{ gestureEnabled: false }} />
         <Stack.Screen name="workspace" />
         <Stack.Screen name="owner" />
         <Stack.Screen name="staff" />
@@ -87,6 +90,7 @@ function AppStack() {
         <Stack.Screen name="preferences" options={{ headerShown: true, title: t('screens.preferences') }} />
         <Stack.Screen name="daily-digest" options={{ headerShown: true, title: t('screens.digest') }} />
         <Stack.Screen name="period-report" options={{ headerShown: true, title: t('screens.report') }} />
+        <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
         <Stack.Screen name="join" options={{ headerShown: true, title: t('screens.join'), presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>
@@ -104,4 +108,20 @@ function useSignedOutRedirect() {
   useEffect(() => {
     if (ready && !session && !onPublicScreen) router.replace('/sign-in');
   }, [ready, session, onPublicScreen]);
+}
+
+/**
+ * Signed-in people who have not given the required personal data consents for the current policy version (first
+ * use, a new version, or after withdrawing) see the consent screen before anything else. The start screen waits
+ * for the answer itself; this catches every other way in (links, notifications, a policy change).
+ */
+function useConsentGate() {
+  const { session } = useSession();
+  const privacy = usePrivacy();
+  const first = (useSegments() as string[])[0];
+  const exempt = !first || first === 'sign-in' || first === 'consent';
+  const needed = !!session && privacy.data?.accepted === false;
+  useEffect(() => {
+    if (needed && !exempt) router.replace('/consent');
+  }, [needed, exempt]);
 }

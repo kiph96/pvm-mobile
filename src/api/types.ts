@@ -287,3 +287,24 @@ export interface ShiftSales {
   totalSales: number; totalCommission: number; sales: SaleView[];
 }
 export interface RecordSale { amount: number; note?: string | null; employmentId?: UUID | null }
+
+// ---------------------------------------------------------------- personal data consent (Viet Nam)
+export type DataRequestKind = 'export' | 'delete' | 'withdraw';
+/** The consent in force (latest record); absent = never asked. */
+export interface PrivacyConsent {
+  policyVersion: string; action: 'accept' | 'update' | 'withdraw';
+  service: boolean; crossBorder: boolean; marketing: boolean; ageConfirmed: boolean; at: ISODateTime;
+}
+export interface DataRequest {
+  id: UUID; kind: DataRequestKind; status: 'open' | 'done' | 'rejected';
+  createdAt: ISODateTime; handledAt?: ISODateTime | null; handledNote?: string | null;
+}
+/** accepted = the required consents are given for the current policy version; the app asks again when false. */
+export interface PrivacyState {
+  policyVersion: string; controller: string; contactEmail: string; accepted: boolean;
+  /** absent = never asked */
+  consent?: PrivacyConsent | null; requests: DataRequest[];
+}
+export interface GiveConsent {
+  policyVersion: string; service: boolean; crossBorder: boolean; marketing: boolean; ageConfirmed: boolean; client?: string | null;
+}

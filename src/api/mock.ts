@@ -12,6 +12,8 @@ import type * as T from './types';
 const TZ = 'Asia/Ho_Chi_Minh';
 const OFFSET = '+07:00';
 const DAY = 86_400_000;
+/** same as pvm.privacy.policy-version on the server */
+const POLICY_VERSION = '2026-10-29';
 
 let seq = 1000;
 const id = (prefix = 'f') => `${prefix}${(seq++).toString(16).padStart(7, '0')}-0000-4000-8000-${Date.now().toString(16).slice(-12).padStart(12, '0')}`;
@@ -175,6 +177,7 @@ export function createMockApi(actor: () => Actor): Api {
   const userName = (uid: string) => db.users.find((u) => u.id === uid)?.displayName ?? 'Unknown';
   const memberOf = (e: Employment) => db.memberships.find((m) => m.id === e.membershipId)!;
   const prefsOf: Record<string, { maxShiftsPerWeek: number | null; slots: T.PrefSlot[] }> = {};
+  const privacy: Record<string, { consent: T.PrivacyConsent; requests: T.DataRequest[] }> = {};
   const emp = (eid: string) => db.employments.find((e) => e.id === eid) ?? fail(404, t('mock.notFound'));
   const shiftOf = (sid: string) => db.shifts.find((s) => s.id === sid && s.org === org()) ?? fail(404, t('mock.notFound'));
   const rateNow = (eid: string) => db.rates.filter((r) => r.employmentId === eid && !r.validTo).at(-1);
@@ -958,7 +961,38 @@ export function createMockApi(actor: () => Actor): Api {
     registerDevice: () => wait(() => ({ active: 1 })),
     unregisterDevice: () => wait(() => undefined),
     devices: () => wait(() => ({ active: 0 })),
+
+    // demo people have already agreed, so the demo opens straight away; withdrawing asks again
+    privacy: () => wait(() => privacyView(me())),
+    savePrivacy: (req) => wait(() => {
+      const uid = me();
+      if (req.policyVersion !== POLICY_VERSION) fail(409, t('errors.policy_outdated'), 'policy_outdated');
+      if (!req.service || !req.crossBorder || !req.ageConfirmed) fail(422, t('errors.consent_required'), 'consent_required');
+      const before = privacyOf(uid).consent;
+      privacyOf(uid).consent = { policyVersion: POLICY_VERSION, action: !before || before.action === 'withdraw' ? 'accept' : 'update',
+        service: true, crossBorder: true, marketing: req.marketing, ageConfirmed: true, at: nowIso() };
+      return privacyView(uid);
+    }),
+    privacyRequest: (kind) => wait(() => {
+      const p = privacyOf(me());
+      if (p.requests.some((r) => r.kind === kind && r.status === 'open')) fail(409, t('errors.request_open'), 'request_open');
+      p.requests.unshift({ id: id('31'), kind, status: 'open', createdAt: nowIso(), handledAt: null, handledNote: null });
+      if (kind === 'withdraw') {
+        p.consent = { policyVersion: POLICY_VERSION, action: 'withdraw', service: false, crossBorder: false, marketing: false, ageConfirmed: false, at: nowIso() };
+      }
+      return privacyView(me());
+    }),
   };
+
+  function privacyOf(uid: string) {
+    return privacy[uid] ??= { consent: { policyVersion: POLICY_VERSION, action: 'accept', service: true, crossBorder: true,
+      marketing: false, ageConfirmed: true, at: new Date(Date.now() - 30 * DAY).toISOString() }, requests: [] };
+  }
+  function privacyView(uid: string): T.PrivacyState {
+    const { consent, requests } = privacyOf(uid);
+    return { policyVersion: POLICY_VERSION, controller: 'Phạm Trung Kiên', contactEmail: 'privacy@pvm.local',
+      accepted: consent.action !== 'withdraw' && consent.policyVersion === POLICY_VERSION, consent, requests: requests.slice(0, 10) };
+  }
 
   // ------------------------------------------------- staffing plan (demo)
   function tplStaff(tp: T.TemplateView, weekday: number, p: T.PolicyView) {
