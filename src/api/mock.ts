@@ -1020,8 +1020,10 @@ export function createMockApi(actor: () => Actor): Api {
       const rows = db.stores.filter((s) => s.org === org()).flatMap((s) => {
         const rule = db.policies[s.id].rules?.attendance_bonus;
         if (!rule?.enabled || !rule.amount) return [];
-        return db.employments.filter((e) => e.storeId === s.id && e.status === 'active').map((e) => {
-          const items = db.violations.filter((v) => v.employmentId === e.id && (v.status === 'reported' || v.status === 'confirmed')
+        // one bonus per person, at their home store; violations from every store they work at count
+        return db.employments.filter((e) => e.storeId === s.id && e.status === 'active' && homeOf(e.membershipId) === s.id).map((e) => {
+          const theirs = new Set(db.employments.filter((x) => x.membershipId === e.membershipId).map((x) => x.id));
+          const items = db.violations.filter((v) => theirs.has(v.employmentId) && (v.status === 'reported' || v.status === 'confirmed')
             && localDateOf(v.occurredAt) >= from && localDateOf(v.occurredAt) <= to);
           const done = items.filter((v) => v.status === 'confirmed');
           const points = done.reduce((n, v) => n - (v.points ?? 0), 0);
