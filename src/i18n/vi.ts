@@ -525,7 +525,7 @@ export const vi: Dict = {
     confirm: 'Xác nhận', confirmedToast: 'Đã xác nhận — đã trừ điểm', dismiss: 'Bỏ qua', dismissed: 'Đã bỏ qua',
     reverse: 'Hoàn lại (trả điểm)', reversed: 'Đã hoàn lại', pts: '{n} điểm',
   },
-  notifications: { empty: 'Bạn đã xem hết thông báo' },
+  notifications: { empty: 'Bạn đã xem hết thông báo', detail: 'Chi tiết thông báo' },
   notify: {
     shiftUnderstaffed: 'Ca ngày {date} mới có {assigned} người, cần tối thiểu {min}',
     shiftRequested: '{name} xin ca ngày {date}',

@@ -41,7 +41,7 @@ interface Points { id: string; employmentId: string; delta: number; kind: string
 /** Like the server: code + params rendered by the app (notify.<code>); title only for texts with no code. */
 interface Notice {
   id: string; org: string; to: string; eventType: string; code: string | null; params: Record<string, string | number>;
-  title: (() => string) | null; availableAt: string; deliveredAt: string | null;
+  title: (() => string) | null; availableAt: string; deliveredAt: string | null; shiftId?: string;
 }
 
 const U = (n: number) => `10000000-0000-4000-8000-00000000000${n}`;
@@ -235,8 +235,8 @@ export function createMockApi(actor: () => Actor): Api {
     employmentId: eid, balance: balance(eid),
     entries: db.points.filter((p) => p.employmentId === eid).map(({ employmentId: _e, ...p }) => p),
   });
-  const notify = (to: string, eventType: string, code: string, params: Record<string, string | number> = {}) =>
-    db.notices.unshift({ id: id('27'), org: org(), to, eventType, code, params, title: null, availableAt: nowIso(), deliveredAt: null });
+  const notify = (to: string, eventType: string, code: string, params: Record<string, string | number> = {}, shiftId?: string) =>
+    db.notices.unshift({ id: id('27'), org: org(), to, eventType, code, params, title: null, availableAt: nowIso(), deliveredAt: null, shiftId });
   const ownerOf = (o: string) => db.memberships.find((m) => m.org === o && m.role === 'owner')!.userId;
   const overlaps = (membershipId: string, s: Shift) =>
     db.assignments.some((a) => {
@@ -656,7 +656,7 @@ export function createMockApi(actor: () => Actor): Api {
         Object.assign(r, { status: 'approved', decidedAt: nowIso(), assignmentId: a.id });
       } else {
         const who = userName(me());
-        notify(ownerOf(s.org), 'alert.shift_request.pending', 'shiftRequested', { name: who, date: s.localDate });
+        notify(ownerOf(s.org), 'alert.shift_request.pending', 'shiftRequested', { name: who, date: s.localDate }, s.id);
       }
       db.requests.push(r);
       return requestView(r);
@@ -672,7 +672,7 @@ export function createMockApi(actor: () => Actor): Api {
       const a = book(shiftOf(r.shiftId), emp(r.employmentId));
       Object.assign(r, { status: 'approved', decidedAt: nowIso(), assignmentId: a.id });
       const date = shiftOf(r.shiftId).localDate;
-      notify(memberOf(emp(r.employmentId)).userId, 'notify.shift_request.approved', 'shiftScheduled', { date });
+      notify(memberOf(emp(r.employmentId)).userId, 'notify.shift_request.approved', 'shiftScheduled', { date }, r.shiftId);
       return requestView(r);
     }),
     rejectRequest: (rid) => wait(() => {
@@ -964,7 +964,8 @@ export function createMockApi(actor: () => Actor): Api {
       return planView(o);
     }),
     notifications: () => wait(() => db.notices.filter((n) => n.org === org() && n.to === me())
-      .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title?.() ?? null, code: n.code, params: n.params, payload: {},
+      .map((n) => ({ id: n.id, eventType: n.eventType, title: n.title?.() ?? null, code: n.code, params: n.params,
+        payload: n.shiftId ? { shift_id: n.shiftId } : {},
         availableAt: n.availableAt, deliveredAt: n.deliveredAt }))),
 
     digestSettings: () => wait(() => digestView(manager().id)),
@@ -1416,11 +1417,12 @@ function populate(db: Db) {
     }, 0), currency: 'VND', unresolvedTimesheets: 0 });
   // notifications
   const n = (org: string, to: string, eventType: string, code: string | null, params: Record<string, string | number>, hoursAgo: number,
-    title: (() => string) | null = null) =>
-    db.notices.push({ id: id('27'), org, to, eventType, code, params, title, availableAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(), deliveredAt: null });
+    title: (() => string) | null = null, shiftId?: string) =>
+    db.notices.push({ id: id('27'), org, to, eventType, code, params, title, availableAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(), deliveredAt: null, shiftId });
   n(ORG1, U(1), 'alert.enrollment.pending', 'joinRequested', { name: 'Hoang Thu Em', store: 'K Coffee - District 1' }, 5);
   n(ORG1, U(1), 'alert.shift_swap.needs_approval', 'swapNeedsApproval', {}, 2);
-  n(ORG1, U(1), 'alert.shift.understaffed', 'shiftUnderstaffed', { date: today(1), assigned: 1, min: 2 }, 1);
+  n(ORG1, U(1), 'alert.shift.understaffed', 'shiftUnderstaffed', { date: today(1), assigned: 1, min: 2 }, 1, null,
+    db.shifts.find((x) => x.org === ORG1 && x.localDate === today(1))?.id);
   n(ORG1, U(3), 'notify.points.awarded', 'pointsAwarded', { n: 10, reason: 'ON_TIME_STREAK_10' }, 96);
   n(ORG1, U(5), 'notify.violation.confirmed', 'violationRecorded', { code: 'LATE', n: -5 }, 144);
   n(ORG1, U(5), 'notify.shift_swap.proposed', 'swapProposed', { name: 'Pham Quoc Binh', from: today(2), to: today(3) }, 3);

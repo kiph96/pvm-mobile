@@ -524,7 +524,7 @@ export const en = {
     confirm: 'Confirm', confirmedToast: 'Confirmed — points deducted', dismiss: 'Dismiss', dismissed: 'Dismissed',
     reverse: 'Reverse (give points back)', reversed: 'Reversed', pts: '{n} pts',
   },
-  notifications: { empty: "You're all caught up" },
+  notifications: { empty: "You're all caught up", detail: 'Notification' },
   notify: {
     shiftUnderstaffed: 'Shift on {date} has only {assigned} people (minimum {min})',
     shiftRequested: '{name} asked for the shift on {date}',
