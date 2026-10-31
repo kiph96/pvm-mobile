@@ -85,6 +85,8 @@ export default function OwnerSchedule() {
         </Card>
       ) : null}
 
+      <Button small title={t('storeWeek.open')} icon="calendar-number-outline" variant="secondary" full style={{ marginBottom: 8 }}
+        onPress={() => router.push(`/store-week?storeId=${storeId}&weekStart=${weekStart}`)} />
       <Row gap={8} style={{ marginBottom: 14 }}>
         <Button small title={t('schedule.fill')} icon="color-wand-outline" variant="secondary" style={{ flex: 1 }} onPress={() => setFillOpen(true)} />
         <Button small title={t('schedule.addShift')} icon="add" variant="secondary" style={{ flex: 1 }} onPress={() => setAddOpen(true)} />

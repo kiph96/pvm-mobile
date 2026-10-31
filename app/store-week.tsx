@@ -6,30 +6,36 @@ import { Pressable, ScrollView, View } from 'react-native';
 import type { StoreWeek as Week } from '@/api/types';
 
 import { StorePicker } from '@/components/domain';
-import { Badge, Card, Empty, ErrorState, IconButton, Loading, Row, Screen, Segmented, Txt } from '@/components/ui';
+import { Badge, Card, Empty, ErrorState, IconButton, Loading, Row, Screen, Segmented, Txt, toneColors } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useManagedStores, useOrgKey, useTemplateNames } from '@/state/queries';
-import { useApi } from '@/state/session';
+import { useApi, useSession } from '@/state/session';
 import { useMyEmployments } from '@/state/staff';
 import { useTheme } from '@/theme';
 import { addDays, dayLabel, dayOfMonth, relativeDay, startOfWeek, time, timeRange, today, weekdayShort } from '@/utils/format';
 
-/** "Lịch tuần": a store's week for its staff, every shift and who works it, so people see who they work with. */
+/**
+ * "Lịch tuần": a store's week, every shift and who works it. Staff see who they work with; owners and store managers
+ * also see draft shifts and the spots still open.
+ */
 export default function StoreWeek() {
   const api = useApi();
   const org = useOrgKey();
   const { t } = useI18n();
   const { colors, radius } = useTheme();
+  const { session, isManager } = useSession();
   const employments = useMyEmployments();
   const managed = useManagedStores();
-  // stores I work at, then stores I manage
-  const stores = [...(employments.data ?? []).map((e) => ({ id: e.storeId, name: e.storeName })),
+  const owned = useQuery({ queryKey: ['stores', session?.workspace?.id], queryFn: api.stores, enabled: isManager });
+  // owners: every store; staff: stores I work at, then stores I manage
+  const stores = [...(owned.data ?? []).map((s) => ({ id: s.id, name: s.name })),
+    ...(employments.data ?? []).map((e) => ({ id: e.storeId, name: e.storeName })),
     ...(managed.data ?? []).map((m) => ({ id: m.storeId, name: m.storeName }))]
     .filter((s, i, all) => all.findIndex((x) => x.id === s.id) === i);
-  const params = useLocalSearchParams<{ storeId?: string }>();
+  const params = useLocalSearchParams<{ storeId?: string; weekStart?: string }>();
   const [storeId, setStoreId] = useState<string | null>(params.storeId ?? null);
   const selected = storeId ?? stores[0]?.id ?? null;
-  const [weekStart, setWeekStart] = useState(startOfWeek(today()));
+  const [weekStart, setWeekStart] = useState(startOfWeek(params.weekStart ?? today()));
   const [view, setView] = useState<'table' | 'list'>('table');
   const names = useTemplateNames(selected);
   const week = useQuery({
@@ -53,7 +59,7 @@ export default function StoreWeek() {
           { value: 'table', label: t('storeWeek.table') }, { value: 'list', label: t('storeWeek.list') },
         ]} />
       </View>
-      {employments.isLoading || week.isLoading ? <Loading /> : week.error ? <ErrorState error={week.error} onRetry={week.refetch} />
+      {employments.isLoading || owned.isLoading || week.isLoading ? <Loading /> : week.error ? <ErrorState error={week.error} onRetry={week.refetch} />
         : shifts.length === 0 ? <Empty icon="calendar-outline" title={t('storeWeek.empty')} message={t('storeWeek.emptyMsg')} />
           : view === 'table' ? <WeekTable days={days} shifts={shifts} names={names} />
           : days.map((d) => {
@@ -74,6 +80,7 @@ export default function StoreWeek() {
                           {s.templateId && names[s.templateId] ? <Txt variant="small" muted>{names[s.templateId]}</Txt> : null}
                         </View>
                         {mine ? <Badge label={t('storeWeek.yourShift')} tone="primary" icon="person" />
+                          : s.status === 'draft' ? <Badge label={t('storeWeek.draft')} tone="warning" />
                           : upcoming ? <Badge label={s.openSlots > 0 ? t('storeWeek.spots', { n: s.openSlots }) : t('storeWeek.full')}
                             tone={s.openSlots > 0 ? 'success' : 'neutral'} /> : null}
                       </Row>
@@ -119,8 +126,13 @@ function WeekTable({ days, shifts, names }: { days: string[]; shifts: Week['shif
   }
   const sorted = [...rows.values()].sort((a, b) => a.start.localeCompare(b.start));
   const line = { borderColor: colors.border, borderBottomWidth: 1 };
+  // a draft (only owners and managers get those) or a coming shift below its minimum gets a tag under the names
+  const noteOf = (s: Week['shifts'][number]['shift']) => s.status === 'draft' ? { label: t('storeWeek.draft'), tone: 'warning' as const }
+    : s.status === 'published' && s.belowMinimum && Date.parse(s.startsAt) > Date.now()
+      ? { label: t('storeWeek.short', { n: s.minStaff - s.assignedCount }), tone: 'danger' as const } : null;
+  const pillsOf = (x: Week['shifts'][number]) => Math.max(1, x.people.length) + (noteOf(x.shift) ? 1 : 0);
   const heightOf = (r: (typeof sorted)[number]) =>
-    14 + Math.max(1, ...days.map((d) => (r.cells[d] ?? []).reduce((n, x) => n + Math.max(1, x.people.length), 0))) * (PILL_H + 4);
+    14 + Math.max(1, ...days.map((d) => (r.cells[d] ?? []).reduce((n, x) => n + pillsOf(x), 0))) * (PILL_H + 4);
   const header = 48;
 
   return (
@@ -160,20 +172,29 @@ function WeekTable({ days, shifts, names }: { days: string[]; shifts: Week['shif
                 const here = r.cells[d] ?? [];
                 return (
                   <View key={d} style={{ width: DAY_W, padding: 5, gap: 4, borderLeftWidth: 1, borderColor: colors.border }}>
-                    {here.map(({ shift: s, people }) => (
-                      <Pressable key={s.id} onPress={() => router.push(`/shift/${s.id}`)} style={{ gap: 4 }}>
-                        {people.length === 0 ? (
-                          <Txt variant="small" muted center style={{ lineHeight: PILL_H }}>–</Txt>
-                        ) : people.map((p, k) => (
-                          <View key={k} style={{ height: PILL_H, borderRadius: radius.sm, paddingHorizontal: 6, justifyContent: 'center',
-                            backgroundColor: p.mine ? colors.primary : colors.background }}>
-                            <Txt variant="small" numberOfLines={1} color={p.mine ? colors.textInverse : colors.text}>
-                              {p.mine ? t('storeWeek.you') : p.displayName}
-                            </Txt>
-                          </View>
-                        ))}
-                      </Pressable>
-                    ))}
+                    {here.map(({ shift: s, people }) => {
+                      const note = noteOf(s);
+                      const tone = note ? toneColors(colors, note.tone) : null;
+                      return (
+                        <Pressable key={s.id} onPress={() => router.push(`/shift/${s.id}`)} style={{ gap: 4 }}>
+                          {people.length === 0 ? (
+                            <Txt variant="small" muted center style={{ lineHeight: PILL_H }}>–</Txt>
+                          ) : people.map((p, k) => (
+                            <View key={k} style={{ height: PILL_H, borderRadius: radius.sm, paddingHorizontal: 6, justifyContent: 'center',
+                              backgroundColor: p.mine ? colors.primary : colors.background }}>
+                              <Txt variant="small" numberOfLines={1} color={p.mine ? colors.textInverse : colors.text}>
+                                {p.mine ? t('storeWeek.you') : p.displayName}
+                              </Txt>
+                            </View>
+                          ))}
+                          {note && tone ? (
+                            <View style={{ height: PILL_H, borderRadius: radius.sm, paddingHorizontal: 6, justifyContent: 'center', backgroundColor: tone.bg }}>
+                              <Txt variant="tiny" numberOfLines={1} color={tone.fg} style={{ fontWeight: '700' }}>{note.label}</Txt>
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 );
               })}

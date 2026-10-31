@@ -580,7 +580,7 @@ export const vi: Dict = {
   storeWeek: {
     table: 'Bảng', list: 'Danh sách', shift: 'Ca',
     open: 'Lịch tuần của cửa hàng', prevWeek: 'Tuần trước', nextWeek: 'Tuần sau',
-    noShifts: 'Không có ca', nobody: 'Chưa có ai', you: 'Bạn', yourShift: 'Ca của bạn', spots: 'Còn {n} chỗ', full: 'Đủ người',
+    noShifts: 'Không có ca', nobody: 'Chưa có ai', you: 'Bạn', yourShift: 'Ca của bạn', spots: 'Còn {n} chỗ', full: 'Đủ người', draft: 'Nháp', short: 'Thiếu {n}',
     empty: 'Tuần này cửa hàng chưa có ca nào', emptyMsg: 'Chủ cửa hàng chưa đăng lịch tuần này.',
   },
   swaps: {

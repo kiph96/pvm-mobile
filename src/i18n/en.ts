@@ -579,7 +579,7 @@ export const en = {
   storeWeek: {
     table: 'Table', list: 'List', shift: 'Shift',
     open: "Store's weekly schedule", prevWeek: 'Previous week', nextWeek: 'Next week',
-    noShifts: 'No shifts', nobody: 'Nobody yet', you: 'You', yourShift: 'Your shift', spots: '{n} spots left', full: 'Full',
+    noShifts: 'No shifts', nobody: 'Nobody yet', you: 'You', yourShift: 'Your shift', spots: '{n} spots left', full: 'Full', draft: 'Draft', short: '{n} short',
     empty: 'No shifts at this store this week', emptyMsg: "The owner hasn't published this week yet.",
   },
   swaps: {
