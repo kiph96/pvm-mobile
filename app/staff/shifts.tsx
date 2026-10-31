@@ -27,6 +27,8 @@ export default function MyShifts() {
 
   return (
     <Screen title={t('myShifts.title')} onRefresh={schedule.refetch} refreshing={schedule.isRefetching}>
+      <Button title={t('storeWeek.open')} icon="calendar-number-outline" variant="secondary" full style={{ marginBottom: 12 }}
+        onPress={() => router.push('/store-week')} />
       <Segmented value={tab} onChange={setTab} options={[
         { value: 'upcoming', label: t('myShifts.upcoming', { n: upcoming.length }) }, { value: 'past', label: t('myShifts.history') },
       ]} />

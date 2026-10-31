@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 
+import { BranchesSection } from '@/components/branches';
 import { StatusBadge, codeLabel } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Avatar, Button, Card, Chip, ErrorState, Field, Loading, Row, Screen, Section, Segmented, Sheet, Txt, confirm } from '@/components/ui';
@@ -57,6 +58,8 @@ export default function EmployeeScreen() {
           <Txt variant="small" color={colors.primary}>{t('employee.givePoints')}</Txt>
         </Card>
       </Row>
+
+      {e.status !== 'ended' ? <BranchesSection employmentId={id} /> : null}
 
       <Section title={t('employee.history')}>
         {points.isLoading ? <Loading /> : (points.data?.entries ?? []).length === 0 ? <Txt muted>{t('employee.noPoints')}</Txt>

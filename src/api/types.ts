@@ -43,6 +43,8 @@ export interface PolicyRules {
   /** Clock in / clock out (default off). When on, the pay rules' hour options decide which hours are paid. */
   attendance?: { enabled?: boolean; late_grace_minutes?: number; early_leave_grace_minutes?: number };
   points?: { allow_negative_balance?: boolean };
+  /** Bonus per shift for staff whose home store (first store they joined) is another store of the business. */
+  branch_support?: { enabled?: boolean; amount?: number };
   violations?: Record<string, { points: number }>;
   awards?: Record<string, { points: number }>;
   rewards?: Record<string, { min_points: number; points_cost: number; amount: number; window: string }>;
@@ -307,4 +309,38 @@ export interface PrivacyState {
 }
 export interface GiveConsent {
   policyVersion: string; service: boolean; crossBorder: boolean; marketing: boolean; ageConfirmed: boolean; client?: string | null;
+}
+
+// ---------------------------------------------------------------- the store's week, for its staff
+/** Every shift of a store over 7 days and who works it (names only, never wages). mine = the viewer. */
+export interface StoreWeek {
+  storeId: UUID; from: ISODate; to: ISODate;
+  shifts: { shift: ShiftView; people: { displayName: string; mine: boolean }[] }[];
+}
+
+// ---------------------------------------------------------------- owner's staff summary (like the monthly sheet)
+/**
+ * Per person over a range: shifts worked or booked (no-shows apart), evening shifts (start 17:00 or later), shifts at
+ * each store, bonus (incl. branch support not yet granted by payroll) and pay (timesheets, or the scheduled time).
+ */
+export interface StaffSummary {
+  from: ISODate; to: ISODate; currency: string; stores: { id: UUID; name: string }[];
+  people: {
+    membershipId: UUID; displayName: string; homeStoreId: UUID | null; shifts: number; eveningShifts: number; noShows: number;
+    byStore: { storeId: UUID; shifts: number }[]; wages: number; bonus: number; branchSupport: number; total: number;
+  }[];
+  totals: { shifts: number; eveningShifts: number; wages: number; bonus: number; total: number };
+}
+
+// ---------------------------------------------------------------- moving people between the owner's stores
+/** One store of the business for a person: employmentId null = not working there yet (can be added). */
+export interface BranchView {
+  storeId: UUID; storeName: string; employmentId?: UUID | null; currentWage?: number | null; wageBasis?: string | null;
+  currency: string; home: boolean;
+}
+/** homeChosen = the owner picked the home store (otherwise the first store they joined). */
+export interface BranchesView { membershipId: UUID; displayName: string; homeStoreId: UUID | null; homeChosen: boolean; stores: BranchView[] }
+/** Someone from another store who could fill a shift; busy = already working then. */
+export interface Borrowable {
+  fromEmploymentId: UUID; membershipId: UUID; displayName: string; fromStoreId: UUID; fromStoreName: string; busy: boolean;
 }

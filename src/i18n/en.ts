@@ -22,7 +22,7 @@ export const en = {
   role: { owner: 'Owner', admin: 'Admin', payroll: 'Payroll', employee: 'Team member' },
   code: {
     LATE: 'Late', NO_SHOW: 'No-show', EARLY_LEAVE: 'Left early', MISSED_CLOCK_OUT: 'Missed clock-out',
-    PERFECT_SHIFT: 'Perfect shift', ON_TIME_STREAK_10: 'On time 10 in a row', MONTHLY_BONUS: 'Monthly bonus',
+    PERFECT_SHIFT: 'Perfect shift', ON_TIME_STREAK_10: 'On time 10 in a row', MONTHLY_BONUS: 'Monthly bonus', BRANCH_SUPPORT: 'Branch support bonus',
   },
   time: {
     today: 'Today', tomorrow: 'Tomorrow', yesterday: 'Yesterday', justNow: 'just now', minAgo: '{n} min ago',
@@ -78,6 +78,7 @@ export const en = {
   theme: { title: 'Appearance', system: 'System', light: 'Light', dark: 'Dark' },
   /** Messages for backend error codes (ApiError.code); unknown codes show the server's text. */
   errors: {
+    not_at_store: 'This person never worked at that store.',
     policy_outdated: 'The privacy policy changed. Update the app and try again.', consent_required: 'Tick the required items to use PVM.',
     request_open: 'You already have a request of this kind in progress.',
     validation_failed: 'Some details are not valid. Please check and try again.', bad_request: 'This request is not valid.',
@@ -187,6 +188,8 @@ export const en = {
     violations: 'Attendance & violations', notifications: 'Notifications', payslips: 'My payslips', join: 'Join a store', digest: 'Daily shift report',
     report: 'Period report',
     privacy: 'Privacy',
+    storeWeek: "Store's weekly schedule",
+    staffSummary: 'Staff summary',
   },
   owner: {
     greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', team: 'Team', shortToday: 'Short today',
@@ -326,8 +329,33 @@ export const en = {
   },
   advanced: {
     title: 'Advanced', heading: 'Clock in/out, overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
-    onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%',
+    onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%', supportOn: 'Branch support {amount}/shift',
     save: 'Save advanced settings', saved: 'Advanced settings saved',
+  },
+  branches: {
+    title: 'Stores', home: 'Home store', homeAuto: 'Automatic: the first store they joined', notHere: 'Not working here',
+    add: 'Add here', addTitle: 'Let {name} also work at {store}', addNote: 'No access key needed. {name} gets a notification and can take shifts at this store.',
+    sameWage: 'Same wage as now ({wage})', otherWage: 'Another wage', added: '{name} can now work at {store}',
+    makeHome: 'Make home store', homeSet: 'Home store changed',
+    homeHint: 'Shifts at stores other than the home store count as helping another branch.',
+    borrowTitle: 'Borrow from other stores', borrow: 'Borrow', busy: 'Busy then', borrowed: '{name} borrowed from {store}',
+    borrowNote: 'They are added to this store automatically, at the wage they have at their own store.',
+  },
+  support: {
+    title: 'Branch support bonus',
+    hint: 'Staff from another store of the business get this bonus for each shift they work here, paid with their pay as a bonus.',
+    perShift: 'Per shift',
+  },
+  summary: {
+    compact: 'Summary', fullTable: 'Full table', shiftsShort: 'Shifts', tapHint: 'Tap a row for details. ⇄ = helped another branch. Amounts in {unit}.', homeOf: 'Home store: {store}', absent: 'No-shows', support: 'Support',
+    toPay: 'Total to pay', wagesBonus: 'Wages {wages} · Bonus {bonus}',
+    supportShifts: 'Support',
+    menu: 'Staff summary', menuSub: 'Shifts, evening shifts, other-branch shifts, bonus and pay',
+    month: '{m}/{y}', periods: 'Payroll periods', shifts: 'Shifts', evening: 'Evening', bonus: 'Bonus', wages: 'Wages',
+    total: 'Total', name: 'Staff', all: 'All staff', noShows: '{n} no-shows',
+    empty: 'No staff yet', emptyMsg: 'Invite staff to your store to see the summary.',
+    note: 'Evening: shifts starting from 17:00. Shifts not worked yet count at their scheduled time. Bonus includes branch support paid when payroll runs.',
+    supportOf: 'incl. branch support {amount}',
   },
   staffingPlan: {
     title: 'People per shift',
@@ -489,7 +517,7 @@ export const en = {
     timesheetApproved: 'Your hours for {date} were approved',
     wageChanged: 'Your wage is now {amount}',
     employmentEnded: 'Your employment at this store has ended',
-    joinRequested: '{name} wants to join {store}', joinApproved: 'You can now pick shifts at {store}',
+    joinRequested: '{name} wants to join {store}', branchAdded: 'You can now also work at {store}', joinApproved: 'You can now pick shifts at {store}',
     joinDeclined: 'Your request to join the store was declined',
     employeeLimitExceeded: '{store} now has more than its limit of {n} employees',
     payslipReady: 'Your payslip for {period} is ready',
@@ -522,6 +550,12 @@ export const en = {
     title: 'My shifts', upcoming: 'Upcoming ({n})', history: 'History', nothing: 'Nothing booked yet', noPast: 'No past shifts',
     swap: 'Swap this shift', swapTitle: 'Swap with a colleague', swapIntro: 'You give away {shift}. Which shift would you take instead?',
     noOptions: 'No colleague shifts to swap with in the next 2 weeks.', option: '{shift} ({n} people)',
+  },
+  storeWeek: {
+    table: 'Table', list: 'List', shift: 'Shift',
+    open: "Store's weekly schedule", prevWeek: 'Previous week', nextWeek: 'Next week',
+    noShifts: 'No shifts', nobody: 'Nobody yet', you: 'You', yourShift: 'Your shift', spots: '{n} spots left', full: 'Full',
+    empty: 'No shifts at this store this week', emptyMsg: "The owner hasn't published this week yet.",
   },
   swaps: {
     title: 'Swaps', subtitle: 'Trade shifts with your colleagues', none: 'No swaps yet',

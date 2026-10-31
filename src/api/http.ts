@@ -142,6 +142,13 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.RateView>('PUT', `/employments/${employmentId}/rate`, { amount, basis }),
     rates: (employmentId: string) => call<T.RateView[]>('GET', `/employments/${employmentId}/rates`),
     endEmployment: (employmentId: string) => call<T.EmployeeView>('POST', `/employments/${employmentId}/end`),
+    // the owner's other stores: work there too, home store, borrow for a shift (no access key)
+    branches: (employmentId: string) => call<T.BranchesView>('GET', `/employments/${employmentId}/branches`),
+    addToBranch: (employmentId: string, storeId: string, amount?: number, basis?: 'hourly' | 'per_shift') =>
+      call<T.BranchesView>('POST', `/employments/${employmentId}/branches`, { storeId, amount, basis }),
+    setHomeStore: (employmentId: string, storeId: string) => call<T.BranchesView>('PUT', `/employments/${employmentId}/home`, { storeId }),
+    borrowable: (shiftId: string) => call<T.Borrowable[]>('GET', `/shifts/${shiftId}/borrowable`),
+    borrow: (shiftId: string, fromEmploymentId: string) => call<T.AssignmentView>('POST', `/shifts/${shiftId}/borrow`, { fromEmploymentId }),
 
     // schedule
     templates: (storeId: string) => call<T.TemplateView[]>('GET', `/stores/${storeId}/shift-templates`),
@@ -153,6 +160,8 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     shifts: (storeId: string, from: string, to: string) =>
       call<T.ShiftView[]>('GET', `/stores/${storeId}/shifts` + q({ from, to })),
     shift: (id: string) => call<T.ShiftDetail>('GET', `/shifts/${id}`),
+    /** The store's 7 days from `from`, with who works each shift (staff of that store, owners/admins). */
+    storeWeek: (storeId: string, from: string) => call<T.StoreWeek>('GET', `/stores/${storeId}/week?from=${from}`),
     publishShift: (id: string) => call<T.ShiftView>('POST', `/shifts/${id}/publish`),
     cancelShift: (id: string) => call<T.ShiftView>('POST', `/shifts/${id}/cancel`),
     updateStaffing: (id: string, minStaff: number, optimalStaff: number, maxStaff: number) =>
@@ -234,6 +243,8 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
       call<T.ReportSettings>('PUT', '/me/period-report', { enabled, email, language }),
     previewReport: () => call<T.ReportPreview>('GET', '/me/period-report/preview'),
     sendReportNow: () => call<T.ReportSendResult>('POST', '/me/period-report/send'),
+    /** Owner: shifts, bonus and pay per person over a range (a month or a payroll period, at most 62 days). */
+    staffSummary: (from: string, to: string) => call<T.StaffSummary>('GET', '/staff-summary' + q({ from, to })),
     registerDevice: (expoPushToken: string, platform: 'ios' | 'android') =>
       call<{ active: number }>('POST', '/me/devices', { expoPushToken, platform }),
     unregisterDevice: (expoPushToken: string) => call<void>('POST', '/me/devices/unregister', { expoPushToken }),

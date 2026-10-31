@@ -15,6 +15,11 @@ const NIGHT_STARTS = ['21:00', '22:00', '23:00'];
 const NIGHT_ENDS = ['05:00', '06:00', '07:00'];
 
 type Sales = NonNullable<PolicyRules['sales']>;
+type Support = { enabled: boolean; amount: number };
+const SUPPORT_AMOUNTS = [10_000, 20_000, 30_000, 50_000];
+const supportOf = (rules: PolicyRules | null | undefined): Support => ({
+  enabled: !!rules?.branch_support?.enabled, amount: rules?.branch_support?.amount || 20_000,
+});
 type Attendance = { enabled: boolean; late_grace_minutes: number; early_leave_grace_minutes: number };
 
 const attendanceOf = (rules: PolicyRules | null | undefined): Attendance => ({
@@ -40,23 +45,27 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
   const [sales, setSales] = useState<Sales>(savedSales);
   const savedAttendance = attendanceOf(policy.rules);
   const [attendance, setAttendance] = useState<Attendance>(savedAttendance);
+  const savedSupport = supportOf(policy.rules);
+  const [support, setSupport] = useState<Support>(savedSupport);
   useEffect(() => {
     const p = payRulesOf(policy.rules);
     setOvertime(p.overtime);
     setNight(p.night);
     setSales({ enabled: !!policy.rules?.sales?.enabled, commission_percent: policy.rules?.sales?.commission_percent ?? 2 });
     setAttendance(attendanceOf(policy.rules));
+    setSupport(supportOf(policy.rules));
   }, [policy]);
-  const dirty = JSON.stringify([overtime, night, sales, attendance])
-    !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales, savedAttendance]);
+  const dirty = JSON.stringify([overtime, night, sales, attendance, support])
+    !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales, savedAttendance, savedSupport]);
   const on = [savedAttendance.enabled ? t('advanced.attendanceOn') : null, savedPay.overtime ? t('advanced.overtimeOn') : null, savedPay.night ? t('advanced.nightOn') : null,
-    savedSales.enabled ? t('advanced.salesOn', { n: pct(savedSales.commission_percent ?? 2) }) : null].filter(Boolean);
+    savedSales.enabled ? t('advanced.salesOn', { n: pct(savedSales.commission_percent ?? 2) }) : null,
+    savedSupport.enabled ? t('advanced.supportOn', { amount: money(savedSupport.amount) }) : null].filter(Boolean);
 
   const save = () => run('advanced', () => api.updatePolicy(storeId, {
     employeeLimit: policy.employeeLimit, employeeLimitMode: policy.employeeLimitMode, minStaff: policy.minStaff,
     optimalStaff: policy.optimalStaff, maxStaff: policy.maxStaff, registrationMode: policy.registrationMode,
     swapApprovalRequired: policy.swapApprovalRequired,
-    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales, attendance },
+    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales, attendance, branch_support: support },
   }), t('advanced.saved'));
 
   return (
@@ -144,6 +153,18 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
                 </Row>
                 <Txt variant="small" muted>{t('sales.example', { amount: money(1_000_000), commission: money(10_000 * (sales.commission_percent ?? 2)) })}</Txt>
               </>
+            ) : null}
+          </View>
+
+          <View style={{ gap: 10 }}>
+            <Toggle label={t('support.title')} hint={t('support.hint')} value={support.enabled}
+              onChange={(v) => setSupport({ ...support, enabled: v })} />
+            {support.enabled ? (
+              <Row gap={8} wrap>
+                <Txt variant="small" muted>{t('support.perShift')}</Txt>
+                {SUPPORT_AMOUNTS.map((a) => <Chip key={a} label={money(a)} selected={support.amount === a}
+                  onPress={() => setSupport({ ...support, amount: a })} />)}
+              </Row>
             ) : null}
           </View>
 

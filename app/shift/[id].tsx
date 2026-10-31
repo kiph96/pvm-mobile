@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import type { AttendanceView } from '@/api/types';
 import { SHIFT_TONE, StatusBadge, useStores } from '@/components/domain';
 import { SalesCard } from '@/components/salesCard';
+import { BorrowList } from '@/components/branches';
 import { useAction } from '@/components/toast';
 import {
   Avatar, Badge, Button, Card, Empty, ErrorState, ListItem, Loading, Row, Screen, Section, Sheet, StaffingBar, Stepper, Txt, confirm,
@@ -195,6 +196,7 @@ function AssignSheet({ visible, onClose, shiftId, storeId, booked }: { visible: 
           right={<Button small title={t('shift.assign')} loading={busy === e.employmentId}
             onPress={async () => { if (await run(e.employmentId, () => api.assign(shiftId, e.employmentId), t('shift.assigned', { name: e.displayName }))) onClose(); }} />} />
       ))}
+      <BorrowList shiftId={shiftId} visible={visible} onDone={onClose} />
     </Sheet>
   );
 }

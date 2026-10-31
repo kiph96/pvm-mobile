@@ -3,7 +3,7 @@
 // two owners (K Coffee, Lan Tea), three stores, shifts
 // generated around today, requests, swaps, attendance, points and payroll.
 import { t } from '@/i18n';
-import { startOfWeek, today } from '@/utils/format';
+import { addDays, startOfWeek, today } from '@/utils/format';
 import { DEFAULT_PAY, estimatePay, payRulesOf, type WageBasis } from '@/utils/pay';
 
 import { ApiError, type Actor, type Api } from './http';
@@ -178,6 +178,8 @@ export function createMockApi(actor: () => Actor): Api {
   const memberOf = (e: Employment) => db.memberships.find((m) => m.id === e.membershipId)!;
   const prefsOf: Record<string, { maxShiftsPerWeek: number | null; slots: T.PrefSlot[] }> = {};
   const privacy: Record<string, { consent: T.PrivacyConsent; requests: T.DataRequest[] }> = {};
+  /** home store chosen by the owner, by membership */
+  const homeChosen: Record<string, string> = {};
   const emp = (eid: string) => db.employments.find((e) => e.id === eid) ?? fail(404, t('mock.notFound'));
   const shiftOf = (sid: string) => db.shifts.find((s) => s.id === sid && s.org === org()) ?? fail(404, t('mock.notFound'));
   const rateNow = (eid: string) => db.rates.filter((r) => r.employmentId === eid && !r.validTo).at(-1);
@@ -564,6 +566,22 @@ export function createMockApi(actor: () => Actor): Api {
       return db.shifts.filter((s) => s.org === org() && s.storeId === storeId && s.localDate >= from && s.localDate <= to && (isMgr || s.status !== 'draft'))
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt)).map(shiftView);
     }),
+    storeWeek: (storeId, from) => wait(() => {
+      const m = member();
+      const isMgr = m.role === 'owner' || m.role === 'admin';
+      if (!isMgr && !db.employments.some((e) => e.membershipId === m.id && e.storeId === storeId && e.status === 'active')) {
+        fail(403, t('errors.forbidden'));
+      }
+      const to = addDays(from, 6);
+      const shifts = db.shifts.filter((s) => s.org === org() && s.storeId === storeId && s.localDate >= from && s.localDate <= to
+          && (isMgr ? s.status !== 'cancelled' : s.status === 'published' || s.status === 'closed'))
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+        .map((s) => ({ shift: shiftView(s), people: db.assignments.filter((a) => a.shiftId === s.id && live(a)).map((a) => {
+          const who = memberOf(emp(a.employmentId));
+          return { displayName: userName(who.userId), mine: who.id === m.id };
+        }) }));
+      return { storeId, from, to, shifts };
+    }),
     shift: (sid) => wait(() => {
       const m = member();
       const isMgr = m.role === 'owner' || m.role === 'admin';
@@ -669,6 +687,42 @@ export function createMockApi(actor: () => Actor): Api {
     assign: (sid, employmentId) => wait(() => {
       manager();
       return assignmentView(book(shiftOf(sid), emp(employmentId)));
+    }),
+    branches: (eid) => wait(() => {
+      manager();
+      return branchesView(emp(eid).membershipId);
+    }),
+    addToBranch: (eid, storeId, amount, basis) => wait(() => {
+      manager();
+      addToStore(emp(eid), storeId, amount, basis);
+      return branchesView(emp(eid).membershipId);
+    }),
+    setHomeStore: (eid, storeId) => wait(() => {
+      manager();
+      const e = emp(eid);
+      if (!db.employments.some((x) => x.membershipId === e.membershipId && x.storeId === storeId)) fail(422, t('errors.not_at_store'), 'not_at_store');
+      homeChosen[e.membershipId] = storeId;
+      return branchesView(e.membershipId);
+    }),
+    borrowable: (sid) => wait(() => {
+      manager();
+      const s = shiftOf(sid);
+      const byPerson = new Map<string, Employment[]>();
+      db.employments.filter((e) => e.org === org() && e.status === 'active')
+        .forEach((e) => byPerson.set(e.membershipId, [...(byPerson.get(e.membershipId) ?? []), e]));
+      return [...byPerson.entries()].filter(([, list]) => !list.some((e) => e.storeId === s.storeId)).map(([m, list]) => {
+        const from = list.find((e) => e.storeId === homeOf(m)) ?? list[0];
+        return { fromEmploymentId: from.id, membershipId: m, displayName: userName(memberOf(from).userId), fromStoreId: from.storeId,
+          fromStoreName: db.stores.find((x) => x.id === from.storeId)?.name ?? '', busy: overlaps(m, s) };
+      }).sort((a, b) => Number(a.busy) - Number(b.busy) || a.displayName.localeCompare(b.displayName));
+    }),
+    borrow: (sid, fromEmploymentId) => wait(() => {
+      manager();
+      const s = shiftOf(sid);
+      const from = emp(fromEmploymentId);
+      const target = db.employments.find((e) => e.membershipId === from.membershipId && e.storeId === s.storeId && e.status === 'active')
+        ?? addToStore(from, s.storeId);
+      return assignmentView(book(s, target));
     }),
     cancelAssignment: (aid) => wait(() => {
       manager();
@@ -943,6 +997,43 @@ export function createMockApi(actor: () => Actor): Api {
     }),
     // period report: the demo has no mail server, so it only "logs" (the app says so)
     reportSettings: () => wait(() => reportView(manager().id)),
+    staffSummary: (from, to) => wait(() => {
+      manager();
+      const o = org();
+      const stores = db.stores.filter((x) => x.org === o);
+      const emps = db.employments.filter((e) => e.org === o);
+      // home store = the store of the person's first employment in the business
+      const home: Record<string, string> = {};
+      [...emps].sort((a, b) => a.startedAt.localeCompare(b.startedAt)).forEach((e) => { home[e.membershipId] ??= e.storeId; });
+      const acc: Record<string, { shifts: number; evening: number; noShows: number; byStore: Record<string, number>; wages: number; support: number }> = {};
+      const of = (m: string) => (acc[m] ??= { shifts: 0, evening: 0, noShows: 0, byStore: {}, wages: 0, support: 0 });
+      emps.filter((e) => e.status === 'active').forEach((e) => of(e.membershipId));
+      db.assignments.filter((a) => a.org === o && live(a)).forEach((a) => {
+        const sh = db.shifts.find((x) => x.id === a.shiftId)!;
+        if (sh.localDate < from || sh.localDate > to) return;
+        const e = emp(a.employmentId);
+        const p = of(e.membershipId);
+        if (a.state === 'no_show') { p.noShows++; return; }
+        p.shifts++;
+        if (sh.startsAt.slice(11, 16) >= '17:00') p.evening++;
+        p.byStore[sh.storeId] = (p.byStore[sh.storeId] ?? 0) + 1;
+        const rules = db.policies[sh.storeId].rules;
+        p.wages += estimatePay(payRulesOf(rules), a.basis, a.wage, sh.startsAt.slice(11, 16), sh.endsAt.slice(11, 16)).total;
+        const bonus = rules?.branch_support;
+        if (bonus?.enabled && bonus.amount && home[e.membershipId] !== sh.storeId) p.support += bonus.amount;
+      });
+      const people = Object.entries(acc).map(([m, p]) => ({
+        membershipId: m, displayName: userName(db.memberships.find((x) => x.id === m)!.userId), homeStoreId: home[m] ?? null,
+        shifts: p.shifts, eveningShifts: p.evening, noShows: p.noShows,
+        byStore: Object.entries(p.byStore).map(([storeId, shifts]) => ({ storeId, shifts })),
+        wages: p.wages, bonus: p.support, branchSupport: p.support, total: p.wages + p.support,
+      })).sort((a, b) => stores.findIndex((x) => x.id === a.homeStoreId) - stores.findIndex((x) => x.id === b.homeStoreId)
+        || a.displayName.localeCompare(b.displayName));
+      const sum = (f: (p: (typeof people)[number]) => number) => people.reduce((n, p) => n + f(p), 0);
+      return { from, to, currency: 'VND', stores: stores.map((x) => ({ id: x.id, name: x.name })), people,
+        totals: { shifts: sum((p) => p.shifts), eveningShifts: sum((p) => p.eveningShifts), wages: sum((p) => p.wages),
+          bonus: sum((p) => p.bonus), total: sum((p) => p.total) } };
+    }),
     updateReportSettings: (enabled, email, language) => wait(() => {
       const m = manager();
       if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(400, t('report.badEmail'));
@@ -984,6 +1075,33 @@ export function createMockApi(actor: () => Actor): Api {
     }),
   };
 
+  function homeOf(membershipId: string) {
+    return homeChosen[membershipId]
+      ?? [...db.employments].filter((e) => e.membershipId === membershipId).sort((a, b) => a.startedAt.localeCompare(b.startedAt))[0]?.storeId;
+  }
+  function addToStore(from: Employment, storeId: string, amount?: number, basis?: WageBasis) {
+    if (db.employments.some((e) => e.membershipId === from.membershipId && e.storeId === storeId && e.status === 'active')) {
+      fail(409, t('errors.already_employed'), 'already_employed');
+    }
+    const e: Employment = { id: id('b2'), org: from.org, storeId, membershipId: from.membershipId, status: 'active', startedAt: nowIso(), endedAt: null };
+    db.employments.push(e);
+    const current = rateNow(from.id);
+    if (amount ?? current) {
+      db.rates.push({ id: id('b3'), employmentId: e.id, amount: amount ?? current!.amount, basis: basis ?? current?.basis ?? 'hourly', validFrom: nowIso(), validTo: null });
+    }
+    return e;
+  }
+  function branchesView(membershipId: string): T.BranchesView {
+    const home = homeOf(membershipId);
+    const m = db.memberships.find((x) => x.id === membershipId)!;
+    return { membershipId, displayName: userName(m.userId), homeStoreId: home ?? null, homeChosen: !!homeChosen[membershipId],
+      stores: db.stores.filter((s) => s.org === m.org).map((s) => {
+        const e = db.employments.find((x) => x.membershipId === membershipId && x.storeId === s.id && x.status === 'active');
+        const r = e ? rateNow(e.id) : undefined;
+        return { storeId: s.id, storeName: s.name, employmentId: e?.id ?? null, currentWage: r?.amount ?? null, wageBasis: r?.basis ?? null,
+          currency: 'VND', home: s.id === home };
+      }) };
+  }
   function privacyOf(uid: string) {
     return privacy[uid] ??= { consent: { policyVersion: POLICY_VERSION, action: 'accept', service: true, crossBorder: true,
       marketing: false, ageConfirmed: true, at: new Date(Date.now() - 30 * DAY).toISOString() }, requests: [] };

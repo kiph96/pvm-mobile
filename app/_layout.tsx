@@ -91,6 +91,8 @@ function AppStack() {
         <Stack.Screen name="daily-digest" options={{ headerShown: true, title: t('screens.digest') }} />
         <Stack.Screen name="period-report" options={{ headerShown: true, title: t('screens.report') }} />
         <Stack.Screen name="privacy" options={{ headerShown: true, title: t('screens.privacy') }} />
+        <Stack.Screen name="staff-summary" options={{ headerShown: true, title: t('screens.staffSummary') }} />
+        <Stack.Screen name="store-week" options={{ headerShown: true, title: t('screens.storeWeek') }} />
         <Stack.Screen name="join" options={{ headerShown: true, title: t('screens.join'), presentation: 'modal' }} />
       </Stack>
     </NavigationThemeProvider>
