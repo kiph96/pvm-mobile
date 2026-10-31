@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import type { IconName } from './ui';
 
-export interface TabDef { name: string; title: string; icon: IconName; badge?: number }
+/** hidden: the route exists but has no tab (e.g. the manager tab for staff who manage no store). */
+export interface TabDef { name: string; title: string; icon: IconName; badge?: number; hidden?: boolean }
 
 /** Bottom tab bar shared by the owner and staff apps. */
 export function AppTabs({ tabs }: { tabs: TabDef[] }) {
@@ -27,6 +28,7 @@ export function AppTabs({ tabs }: { tabs: TabDef[] }) {
       {tabs.map((t) => (
         <Tabs.Screen key={t.name} name={t.name} options={{
           title: t.title,
+          href: t.hidden ? null : undefined,
           tabBarBadge: t.badge ? t.badge : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 },
           tabBarIcon: ({ color, focused }) => (

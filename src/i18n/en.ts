@@ -22,7 +22,7 @@ export const en = {
   role: { owner: 'Owner', admin: 'Admin', payroll: 'Payroll', employee: 'Team member' },
   code: {
     LATE: 'Late', NO_SHOW: 'No-show', EARLY_LEAVE: 'Left early', MISSED_CLOCK_OUT: 'Missed clock-out',
-    PERFECT_SHIFT: 'Perfect shift', ON_TIME_STREAK_10: 'On time 10 in a row', MONTHLY_BONUS: 'Monthly bonus', BRANCH_SUPPORT: 'Branch support bonus',
+    PERFECT_SHIFT: 'Perfect shift', ON_TIME_STREAK_10: 'On time 10 in a row', MONTHLY_BONUS: 'Monthly bonus', BRANCH_SUPPORT: 'Branch support bonus', DAY_OFF: 'Too many days off', DAMAGE: 'Damaged store property', ATTENDANCE_BONUS: 'Attendance bonus',
   },
   time: {
     today: 'Today', tomorrow: 'Tomorrow', yesterday: 'Yesterday', justNow: 'just now', minAgo: '{n} min ago',
@@ -181,7 +181,7 @@ export const en = {
   },
   tabs: {
     home: 'Home', schedule: 'Schedule', team: 'Team', stores: 'Stores', more: 'More', find: 'Find shifts',
-    myShifts: 'My shifts', swaps: 'Swaps', me: 'Me',
+    myShifts: 'My shifts', swaps: 'Swaps', manage: 'Manage', me: 'Me',
   },
   screens: {
     preferences: 'Shift preferences', shift: 'Shift', employee: 'Team member', store: 'Store settings', payroll: 'Payroll', billing: 'Plan & billing',
@@ -190,6 +190,7 @@ export const en = {
     privacy: 'Privacy',
     storeWeek: "Store's weekly schedule",
     staffSummary: 'Staff summary',
+    attendanceBonus: 'Attendance bonus board',
   },
   owner: {
     greeting: 'Good {part}, {name}', notifications: 'Notifications', stores: 'Stores', team: 'Team', shortToday: 'Short today',
@@ -329,7 +330,7 @@ export const en = {
   },
   advanced: {
     title: 'Advanced', heading: 'Clock in/out, overtime pay, night pay, sales & commission', allOff: 'All off — turn on what this store needs.',
-    onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%', supportOn: 'Branch support {amount}/shift',
+    onList: 'On: {list}', attendanceOn: 'Clock in/out', overtimeOn: 'Overtime', nightOn: 'Night pay', salesOn: 'Commission {n}%', supportOn: 'Branch support {amount}/shift', attendanceBonusOn: 'Attendance bonus {amount}',
     save: 'Save advanced settings', saved: 'Advanced settings saved',
   },
   branches: {
@@ -341,12 +342,36 @@ export const en = {
     borrowTitle: 'Borrow from other stores', borrow: 'Borrow', busy: 'Busy then', borrowed: '{name} borrowed from {store}',
     borrowNote: 'They are added to this store automatically, at the wage they have at their own store.',
   },
+  bonus: {
+    menu: 'Attendance bonus board', menuSub: 'Attendance bonus left after penalty points and damages',
+    title: 'Attendance bonus', hint: 'Everyone starts each payroll period with this bonus. Each penalty point and any damaged property comes off it; what is left is paid with their pay.',
+    amount: 'Bonus per period', perPoint: 'Off per point',
+    points: 'Points', remaining: 'Left', base: 'Starting bonus', damage: 'Damage', pending: '{n} to review',
+    none: 'No violations', off: 'No store has an attendance bonus yet',
+    offMsg: 'Turn it on in Stores → Advanced → Attendance bonus.',
+    calc: '{base} − {points} points × {per} − {damages} damage = {left}',
+    tapHint: 'Tap a row to see each violation. Only confirmed violations count. Amounts in {unit}.',
+    pendingNote: 'Not deducted yet: waiting for you to confirm',
+    customPoints: 'Points for this case', damageAmount: 'Value of damaged property', damageHint: 'Comes off the attendance bonus, e.g. a glass at 12,000.',
+  },
+  manage: {
+    title: 'Manage stores', subtitle: 'Approve shifts, swaps and violations, move staff',
+    week: 'Weekly schedule', report: 'Report a violation', requests: 'Shift requests ({n})', swaps: 'Swaps to approve ({n})',
+    violations: 'Violations to confirm ({n})', nothing: 'Nothing waiting for you',
+    confirm: 'Confirm', dismiss: 'Dismiss', confirmed: 'Violation confirmed', dismissed: 'Violation dismissed',
+    hint: 'To put or borrow someone on a shift, open the weekly schedule and tap the shift.',
+  },
+  managers: {
+    title: 'Manager rights', hint: 'Managers approve shifts, swaps, timesheets and violations and move staff at the chosen stores. They see no wages, cannot run payroll and cannot change store settings.',
+    save: 'Save manager rights', saved: 'Manager rights saved', none: 'Manages no store',
+  },
   support: {
     title: 'Branch support bonus',
     hint: 'Staff from another store of the business get this bonus for each shift they work here, paid with their pay as a bonus.',
     perShift: 'Per shift',
   },
   summary: {
+    prevMonth: 'Previous month', nextMonth: 'Next month',
     compact: 'Summary', fullTable: 'Full table', shiftsShort: 'Shifts', tapHint: 'Tap a row for details. ⇄ = helped another branch. Amounts in {unit}.', homeOf: 'Home store: {store}', absent: 'No-shows', support: 'Support',
     toPay: 'Total to pay', wagesBonus: 'Wages {wages} · Bonus {bonus}',
     supportShifts: 'Support',
@@ -517,7 +542,7 @@ export const en = {
     timesheetApproved: 'Your hours for {date} were approved',
     wageChanged: 'Your wage is now {amount}',
     employmentEnded: 'Your employment at this store has ended',
-    joinRequested: '{name} wants to join {store}', branchAdded: 'You can now also work at {store}', joinApproved: 'You can now pick shifts at {store}',
+    joinRequested: '{name} wants to join {store}', branchAdded: 'You can now also work at {store}', managerGranted: 'You now manage {stores}', joinApproved: 'You can now pick shifts at {store}',
     joinDeclined: 'Your request to join the store was declined',
     employeeLimitExceeded: '{store} now has more than its limit of {n} employees',
     payslipReady: 'Your payslip for {period} is ready',

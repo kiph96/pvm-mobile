@@ -3,7 +3,7 @@
 // two owners (K Coffee, Lan Tea), three stores, shifts
 // generated around today, requests, swaps, attendance, points and payroll.
 import { t } from '@/i18n';
-import { addDays, startOfWeek, today } from '@/utils/format';
+import { addDays, localDateOf, startOfWeek, today } from '@/utils/format';
 import { DEFAULT_PAY, estimatePay, payRulesOf, type WageBasis } from '@/utils/pay';
 
 import { ApiError, type Actor, type Api } from './http';
@@ -180,6 +180,8 @@ export function createMockApi(actor: () => Actor): Api {
   const privacy: Record<string, { consent: T.PrivacyConsent; requests: T.DataRequest[] }> = {};
   /** home store chosen by the owner, by membership */
   const homeChosen: Record<string, string> = {};
+  /** demo store managers: membership -> store ids */
+  const managed: Record<string, string[]> = {};
   const emp = (eid: string) => db.employments.find((e) => e.id === eid) ?? fail(404, t('mock.notFound'));
   const shiftOf = (sid: string) => db.shifts.find((s) => s.id === sid && s.org === org()) ?? fail(404, t('mock.notFound'));
   const rateNow = (eid: string) => db.rates.filter((r) => r.employmentId === eid && !r.validTo).at(-1);
@@ -704,6 +706,21 @@ export function createMockApi(actor: () => Actor): Api {
       homeChosen[e.membershipId] = storeId;
       return branchesView(e.membershipId);
     }),
+    managerStores: (eid) => wait(() => {
+      manager();
+      const m = emp(eid).membershipId;
+      return { membershipId: m, displayName: userName(db.memberships.find((x) => x.id === m)!.userId), storeIds: managed[m] ?? [] };
+    }),
+    setManagerStores: (eid, storeIds) => wait(() => {
+      manager();
+      const m = emp(eid).membershipId;
+      managed[m] = [...new Set(storeIds)];
+      return { membershipId: m, displayName: userName(db.memberships.find((x) => x.id === m)!.userId), storeIds: managed[m] };
+    }),
+    myManagedStores: () => wait(() => {
+      const ids = managed[member().id] ?? [];
+      return db.stores.filter((s) => ids.includes(s.id)).map((s) => ({ storeId: s.id, storeName: s.name }));
+    }),
     borrowable: (sid) => wait(() => {
       manager();
       const s = shiftOf(sid);
@@ -825,9 +842,10 @@ export function createMockApi(actor: () => Actor): Api {
     reportViolation: (req) => wait(() => {
       manager();
       const e = emp(req.employmentId);
-      const pts = db.policies[e.storeId].rules?.violations?.[req.code]?.points ?? null;
+      const pts = req.points ?? db.policies[e.storeId].rules?.violations?.[req.code]?.points ?? null;
       const v: Violation = { id: id('20'), org: org(), employmentId: e.id, storeId: e.storeId, assignmentId: req.assignmentId ?? null, code: req.code,
-        occurredAt: req.occurredAt ?? nowIso(), status: 'reported', description: req.description, points: pts, decidedAt: null };
+        occurredAt: req.occurredAt ?? nowIso(), status: 'reported', description: req.description, points: pts, decidedAt: null,
+        damageAmount: req.damageAmount || null };
       db.violations.unshift(v);
       return v;
     }),
@@ -997,6 +1015,26 @@ export function createMockApi(actor: () => Actor): Api {
     }),
     // period report: the demo has no mail server, so it only "logs" (the app says so)
     reportSettings: () => wait(() => reportView(manager().id)),
+    attendanceBonus: (from, to) => wait(() => {
+      manager();
+      const rows = db.stores.filter((s) => s.org === org()).flatMap((s) => {
+        const rule = db.policies[s.id].rules?.attendance_bonus;
+        if (!rule?.enabled || !rule.amount) return [];
+        return db.employments.filter((e) => e.storeId === s.id && e.status === 'active').map((e) => {
+          const items = db.violations.filter((v) => v.employmentId === e.id && (v.status === 'reported' || v.status === 'confirmed')
+            && localDateOf(v.occurredAt) >= from && localDateOf(v.occurredAt) <= to);
+          const done = items.filter((v) => v.status === 'confirmed');
+          const points = done.reduce((n, v) => n - (v.points ?? 0), 0);
+          const damages = done.reduce((n, v) => n + (v.damageAmount ?? 0), 0);
+          return { employmentId: e.id, displayName: userName(memberOf(e).userId), storeId: s.id, storeName: s.name, currency: 'VND',
+            base: rule.amount!, perPoint: rule.per_point ?? 0, points, damages,
+            remaining: Math.max(0, rule.amount! - points * (rule.per_point ?? 0) - damages), pending: items.length - done.length,
+            items: items.map((v) => ({ violationId: v.id, occurredAt: v.occurredAt, code: v.code, description: v.description, points: v.points,
+              damageAmount: v.damageAmount ?? null, status: v.status as 'reported' | 'confirmed' })) };
+        });
+      });
+      return { from, to, rows };
+    }),
     staffSummary: (from, to) => wait(() => {
       manager();
       const o = org();

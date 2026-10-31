@@ -149,6 +149,11 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     setHomeStore: (employmentId: string, storeId: string) => call<T.BranchesView>('PUT', `/employments/${employmentId}/home`, { storeId }),
     borrowable: (shiftId: string) => call<T.Borrowable[]>('GET', `/shifts/${shiftId}/borrowable`),
     borrow: (shiftId: string, fromEmploymentId: string) => call<T.AssignmentView>('POST', `/shifts/${shiftId}/borrow`, { fromEmploymentId }),
+    // store managers: owner chooses who manages which stores; the staff app asks which stores the caller manages
+    managerStores: (employmentId: string) => call<T.ManagerStores>('GET', `/employments/${employmentId}/manager-stores`),
+    setManagerStores: (employmentId: string, storeIds: string[]) =>
+      call<T.ManagerStores>('PUT', `/employments/${employmentId}/manager-stores`, { storeIds }),
+    myManagedStores: () => call<T.ManagedStore[]>('GET', '/me/managed-stores'),
 
     // schedule
     templates: (storeId: string) => call<T.TemplateView[]>('GET', `/stores/${storeId}/shift-templates`),
@@ -245,6 +250,8 @@ export function createHttpApi(baseUrl: string, actor: () => Actor, onUnauthorize
     sendReportNow: () => call<T.ReportSendResult>('POST', '/me/period-report/send'),
     /** Owner: shifts, bonus and pay per person over a range (a month or a payroll period, at most 62 days). */
     staffSummary: (from: string, to: string) => call<T.StaffSummary>('GET', '/staff-summary' + q({ from, to })),
+    /** Owner: the attendance bonus left per person over a range (stores with the attendance bonus on). */
+    attendanceBonus: (from: string, to: string) => call<T.AttendanceBonusBoard>('GET', '/attendance-bonus' + q({ from, to })),
     registerDevice: (expoPushToken: string, platform: 'ios' | 'android') =>
       call<{ active: number }>('POST', '/me/devices', { expoPushToken, platform }),
     unregisterDevice: (expoPushToken: string) => call<void>('POST', '/me/devices/unregister', { expoPushToken }),

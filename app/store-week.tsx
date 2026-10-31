@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -8,7 +8,7 @@ import type { StoreWeek as Week } from '@/api/types';
 import { StorePicker } from '@/components/domain';
 import { Badge, Card, Empty, ErrorState, IconButton, Loading, Row, Screen, Segmented, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
-import { useOrgKey, useTemplateNames } from '@/state/queries';
+import { useManagedStores, useOrgKey, useTemplateNames } from '@/state/queries';
 import { useApi } from '@/state/session';
 import { useMyEmployments } from '@/state/staff';
 import { useTheme } from '@/theme';
@@ -21,8 +21,13 @@ export default function StoreWeek() {
   const { t } = useI18n();
   const { colors, radius } = useTheme();
   const employments = useMyEmployments();
-  const stores = (employments.data ?? []).map((e) => ({ id: e.storeId, name: e.storeName }));
-  const [storeId, setStoreId] = useState<string | null>(null);
+  const managed = useManagedStores();
+  // stores I work at, then stores I manage
+  const stores = [...(employments.data ?? []).map((e) => ({ id: e.storeId, name: e.storeName })),
+    ...(managed.data ?? []).map((m) => ({ id: m.storeId, name: m.storeName }))]
+    .filter((s, i, all) => all.findIndex((x) => x.id === s.id) === i);
+  const params = useLocalSearchParams<{ storeId?: string }>();
+  const [storeId, setStoreId] = useState<string | null>(params.storeId ?? null);
   const selected = storeId ?? stores[0]?.id ?? null;
   const [weekStart, setWeekStart] = useState(startOfWeek(today()));
   const [view, setView] = useState<'table' | 'list'>('table');

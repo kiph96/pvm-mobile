@@ -12,7 +12,7 @@ import {
   Avatar, Badge, Button, Card, Empty, ErrorState, ListItem, Loading, Row, Screen, Section, Sheet, StaffingBar, Stepper, Txt, confirm,
 } from '@/components/ui';
 import { tv, useI18n } from '@/i18n';
-import { useOrgKey, useTemplateNames } from '@/state/queries';
+import { useCanManage, useOrgKey, useTemplateNames } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
 import { ago, dateTime, dayLabel, hoursBetween, money, signupState, time, timeRange } from '@/utils/format';
 import { wageText } from '@/utils/pay';
@@ -31,8 +31,9 @@ export default function ShiftScreen() {
   const names = useTemplateNames(q.data?.shift.storeId ?? null);
   // stores with clock in / out: the owner sees when each person clocked, once the shift has started
   const storeId = q.data?.shift.storeId;
-  const policy = useQuery({ queryKey: ['policy', org, storeId], queryFn: () => api.policy(storeId!), enabled: isManager && !!storeId });
-  const clocked = isManager && !!q.data && Date.parse(q.data.shift.startsAt) <= Date.now() && !!policy.data?.rules?.attendance?.enabled;
+  const canManage = useCanManage(storeId);
+  const policy = useQuery({ queryKey: ['policy', org, storeId], queryFn: () => api.policy(storeId!), enabled: canManage && !!storeId });
+  const clocked = canManage && !!q.data && Date.parse(q.data.shift.startsAt) <= Date.now() && !!policy.data?.rules?.attendance?.enabled;
   const clockQueries = useQueries({
     queries: (clocked ? q.data!.assignments : []).map((a) => ({ queryKey: ['attendance', org, a.id], queryFn: () => api.attendance(a.id) })),
   });
@@ -67,22 +68,26 @@ export default function ShiftScreen() {
           <Badge label={tv('status', shift.status)} tone={SHIFT_TONE[shift.status]} />
         </Row>
         {shift.status !== 'cancelled' ? <StaffingBar assigned={shift.assignedCount} min={shift.minStaff} optimal={shift.optimalStaff} max={shift.maxStaff} /> : null}
-        {isManager && editable ? (
+        {canManage && editable ? (
           <Row gap={8} wrap>
-            {shift.status === 'draft' ? (
+            {isManager && shift.status === 'draft' ? (
               <Button small title={t('shift.publish')} icon="megaphone-outline" loading={busy === 'publish'}
                 onPress={() => run('publish', () => api.publishShift(shift.id), t('shift.publishedToast'))} />
             ) : null}
             {shift.status === 'published' && shift.openSlots > 0 ? (
               <Button small title={t('shift.assign')} icon="person-add-outline" onPress={() => setAssignOpen(true)} />
             ) : null}
-            <Button small title={t('shift.staffing')} icon="options-outline" variant="secondary" onPress={() => setStaffOpen(true)} />
-            <Button small title={t('shift.cancelShift')} icon="close-circle-outline" variant="danger" loading={busy === 'cancel'}
-              onPress={async () => {
-                if (await confirm(t('shift.cancelTitle'), t('shift.cancelMsg'), t('shift.cancelShift'), true)) {
-                  run('cancel', () => api.cancelShift(shift.id), t('shift.cancelled'));
-                }
-              }} />
+            {isManager ? (
+              <>
+                <Button small title={t('shift.staffing')} icon="options-outline" variant="secondary" onPress={() => setStaffOpen(true)} />
+                <Button small title={t('shift.cancelShift')} icon="close-circle-outline" variant="danger" loading={busy === 'cancel'}
+                  onPress={async () => {
+                    if (await confirm(t('shift.cancelTitle'), t('shift.cancelMsg'), t('shift.cancelShift'), true)) {
+                      run('cancel', () => api.cancelShift(shift.id), t('shift.cancelled'));
+                    }
+                  }} />
+              </>
+            ) : null}
           </Row>
         ) : null}
         {!isManager && shift.status === 'published' && upcoming && !mine && !myRequest && !swapFrom && signupState(shift) !== 'open' ? (
@@ -104,7 +109,7 @@ export default function ShiftScreen() {
       </Card>
 
       <Section title={t('shift.who', { n: assignments.length })}>
-        {assignments.length === 0 ? <Empty icon="person-outline" title={t('shift.nobody')} message={isManager ? t('shift.nobodyMgr') : t('shift.nobodyStaff')} />
+        {assignments.length === 0 ? <Empty icon="person-outline" title={t('shift.nobody')} message={canManage ? t('shift.nobodyMgr') : t('shift.nobodyStaff')} />
           : assignments.map((a) => (
             <ListItem key={a.id} title={a.displayName}
               subtitle={[a.wageAmount != null ? wageText(a.wageAmount, a.wageBasis, a.currency) : null, a.replacesAssignmentId ? t('common.viaSwap') : null,
@@ -117,7 +122,7 @@ export default function ShiftScreen() {
                     const r = await run(`sw${a.id}`, () => api.proposeSwap(swapFrom, a.id), t('shift.swapOffered', { name: a.displayName }));
                     if (r) router.back();
                   }} />
-              ) : isManager && !upcoming && shift.status !== 'cancelled' && ['assigned', 'completed', 'no_show'].includes(a.state) ? (
+              ) : canManage && !upcoming && shift.status !== 'cancelled' && ['assigned', 'completed', 'no_show'].includes(a.state) ? (
                 a.state === 'no_show' ? (
                   <Row gap={6}>
                     <StatusBadge status={a.state} />
@@ -132,7 +137,7 @@ export default function ShiftScreen() {
                       }
                     }} />
                 )
-              ) : isManager && a.state === 'assigned' && upcoming ? (
+              ) : canManage && a.state === 'assigned' && upcoming ? (
                 <Button small variant="ghost" title={t('common.remove')} loading={busy === `rm${a.id}`}
                   onPress={async () => {
                     if (await confirm(t('shift.removeTitle'), t('shift.removeMsg', { name: a.displayName }), t('common.remove'), true)) {
@@ -145,7 +150,7 @@ export default function ShiftScreen() {
 
       <SalesCard shift={shift} assignments={assignments} />
 
-      {isManager ? (
+      {canManage ? (
         <Section title={t('shift.requests', { n: openRequests })}>
           {requests.length === 0 ? <Txt muted>{t('shift.noRequests')}</Txt> : requests.map((r) => (
             <Card key={r.id} style={{ gap: 10 }}>
@@ -170,12 +175,12 @@ export default function ShiftScreen() {
         </Section>
       ) : null}
 
-      {isManager ? (
+      {canManage ? (
         <>
           <AssignSheet visible={assignOpen} onClose={() => setAssignOpen(false)} shiftId={shift.id} storeId={shift.storeId}
             booked={assignments.map((a) => a.employmentId)} />
-          <StaffingSheet visible={staffOpen} onClose={() => setStaffOpen(false)} shiftId={shift.id}
-            initial={{ min: shift.minStaff, opt: shift.optimalStaff, max: shift.maxStaff }} />
+          {isManager ? <StaffingSheet visible={staffOpen} onClose={() => setStaffOpen(false)} shiftId={shift.id}
+            initial={{ min: shift.minStaff, opt: shift.optimalStaff, max: shift.maxStaff }} /> : null}
         </>
       ) : null}
     </Screen>
@@ -192,7 +197,7 @@ function AssignSheet({ visible, onClose, shiftId, storeId, booked }: { visible: 
   return (
     <Sheet visible={visible} onClose={onClose} title={t('shift.assign')}>
       {team.isLoading ? <Loading /> : free.length === 0 ? <Txt muted>{t('shift.everyoneOn')}</Txt> : free.map((e) => (
-        <ListItem key={e.employmentId} title={e.displayName} subtitle={wageText(e.currentWage, e.wageBasis, e.currency)} left={<Avatar name={e.displayName} />}
+        <ListItem key={e.employmentId} title={e.displayName} subtitle={e.currentWage != null ? wageText(e.currentWage, e.wageBasis, e.currency) : undefined} left={<Avatar name={e.displayName} />}
           right={<Button small title={t('shift.assign')} loading={busy === e.employmentId}
             onPress={async () => { if (await run(e.employmentId, () => api.assign(shiftId, e.employmentId), t('shift.assigned', { name: e.displayName }))) onClose(); }} />} />
       ))}

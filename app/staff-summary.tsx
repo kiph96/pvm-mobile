@@ -1,24 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import type { StaffSummary as Summary } from '@/api/types';
-import { Ionicons } from '@expo/vector-icons';
-
-import { Badge, Card, Chip, Empty, ErrorState, IconButton, Loading, Row, Screen, Segmented, Sheet, Stat, Txt } from '@/components/ui';
+import { PeriodPicker, usePeriodRange } from '@/components/periodPicker';
+import { Badge, Card, Empty, ErrorState, Loading, Row, Screen, Segmented, Sheet, Stat, Txt } from '@/components/ui';
 import { useI18n } from '@/i18n';
 import { useOrgKey } from '@/state/queries';
 import { useApi } from '@/state/session';
 import { useTheme } from '@/theme';
-import { addDays, localDateOf, money, today } from '@/utils/format';
-
-type Range = { from: string; to: string; label: string; periodId?: string };
-
-const monthRange = (y: number, m: number, label: string): Range => {
-  const from = `${y}-${String(m).padStart(2, '0')}-01`;
-  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
-  return { from, to: addDays(next, -1), label };
-};
+import { money } from '@/utils/format';
 
 /**
  * "Tổng hợp nhân sự": the owner's monthly sheet in the app. One row per person: shifts, evening shifts, shifts at each
@@ -28,43 +20,18 @@ export default function StaffSummary() {
   const api = useApi();
   const org = useOrgKey();
   const { t } = useI18n();
-  const [y0, m0] = today().split('-').map(Number);
-  const [ym, setYm] = useState({ y: y0, m: m0 });
-  const [period, setPeriod] = useState<Range | null>(null);
+  const picker = usePeriodRange();
+  const range = picker.range;
   // phones start with the short list (tap a row for the rest); wide screens with the full table
   const { width } = useWindowDimensions();
   const [view, setView] = useState<'compact' | 'table'>(width < 700 ? 'compact' : 'table');
-  const periods = useQuery({ queryKey: ['periods', org], queryFn: api.payrollPeriods });
-  const range = period ?? monthRange(ym.y, ym.m, t('summary.month', { m: ym.m, y: ym.y }));
   const summary = useQuery({
     queryKey: ['staffSummary', org, range.from, range.to],
     queryFn: () => api.staffSummary(range.from, range.to),
   });
-  const moveMonth = (n: number) => {
-    setPeriod(null);
-    setYm(({ y, m }) => {
-      const k = y * 12 + (m - 1) + n;
-      return { y: Math.floor(k / 12), m: (k % 12) + 1 };
-    });
-  };
-  const recent = (periods.data ?? []).slice(-4).reverse().map((p): Range => ({
-    periodId: p.id, label: p.label, from: localDateOf(p.startsAt), to: addDays(localDateOf(p.endsAt), -1),
-  }));
-
   return (
     <Screen onRefresh={summary.refetch} refreshing={summary.isRefetching}>
-      <Row style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-        <IconButton icon="chevron-back" label={t('storeWeek.prevWeek')} onPress={() => moveMonth(-1)} />
-        <Txt variant="subheading">{range.label}</Txt>
-        <IconButton icon="chevron-forward" label={t('storeWeek.nextWeek')} onPress={() => moveMonth(1)} />
-      </Row>
-      {recent.length ? (
-        <Row gap={8} wrap style={{ marginBottom: 14 }}>
-          <Txt variant="small" muted>{t('summary.periods')}</Txt>
-          {recent.map((p) => <Chip key={p.periodId} label={p.label} selected={period?.periodId === p.periodId}
-            onPress={() => setPeriod(period?.periodId === p.periodId ? null : p)} />)}
-        </Row>
-      ) : null}
+      <PeriodPicker p={picker} />
       <View style={{ marginBottom: 14 }}>
         <Segmented value={view} onChange={setView} options={[
           { value: 'compact', label: t('summary.compact') }, { value: 'table', label: t('summary.fullTable') },

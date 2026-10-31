@@ -20,6 +20,15 @@ const SUPPORT_AMOUNTS = [10_000, 20_000, 30_000, 50_000];
 const supportOf = (rules: PolicyRules | null | undefined): Support => ({
   enabled: !!rules?.branch_support?.enabled, amount: rules?.branch_support?.amount || 20_000,
 });
+type Bonus = { enabled: boolean; amount: number; per_point: number };
+const BONUS_AMOUNTS = [200_000, 300_000, 500_000];
+const PER_POINT = [20_000, 50_000, 100_000];
+const bonusOf = (rules: PolicyRules | null | undefined): Bonus => ({
+  enabled: !!rules?.attendance_bonus?.enabled, amount: rules?.attendance_bonus?.amount || 300_000,
+  per_point: rules?.attendance_bonus?.per_point ?? 50_000,
+});
+/** Violation codes the attendance bonus needs; stores created before it get them when the owner turns it on. */
+const BONUS_CODES = { DAY_OFF: { points: -1 }, DAMAGE: { points: -1 } };
 type Attendance = { enabled: boolean; late_grace_minutes: number; early_leave_grace_minutes: number };
 
 const attendanceOf = (rules: PolicyRules | null | undefined): Attendance => ({
@@ -47,6 +56,8 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
   const [attendance, setAttendance] = useState<Attendance>(savedAttendance);
   const savedSupport = supportOf(policy.rules);
   const [support, setSupport] = useState<Support>(savedSupport);
+  const savedBonus = bonusOf(policy.rules);
+  const [bonus, setBonus] = useState<Bonus>(savedBonus);
   useEffect(() => {
     const p = payRulesOf(policy.rules);
     setOvertime(p.overtime);
@@ -54,18 +65,22 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
     setSales({ enabled: !!policy.rules?.sales?.enabled, commission_percent: policy.rules?.sales?.commission_percent ?? 2 });
     setAttendance(attendanceOf(policy.rules));
     setSupport(supportOf(policy.rules));
+    setBonus(bonusOf(policy.rules));
   }, [policy]);
-  const dirty = JSON.stringify([overtime, night, sales, attendance, support])
-    !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales, savedAttendance, savedSupport]);
+  const dirty = JSON.stringify([overtime, night, sales, attendance, support, bonus])
+    !== JSON.stringify([savedPay.overtime, savedPay.night, savedSales, savedAttendance, savedSupport, savedBonus]);
   const on = [savedAttendance.enabled ? t('advanced.attendanceOn') : null, savedPay.overtime ? t('advanced.overtimeOn') : null, savedPay.night ? t('advanced.nightOn') : null,
     savedSales.enabled ? t('advanced.salesOn', { n: pct(savedSales.commission_percent ?? 2) }) : null,
-    savedSupport.enabled ? t('advanced.supportOn', { amount: money(savedSupport.amount) }) : null].filter(Boolean);
+    savedSupport.enabled ? t('advanced.supportOn', { amount: money(savedSupport.amount) }) : null,
+    savedBonus.enabled ? t('advanced.attendanceBonusOn', { amount: money(savedBonus.amount) }) : null].filter(Boolean);
 
   const save = () => run('advanced', () => api.updatePolicy(storeId, {
     employeeLimit: policy.employeeLimit, employeeLimitMode: policy.employeeLimitMode, minStaff: policy.minStaff,
     optimalStaff: policy.optimalStaff, maxStaff: policy.maxStaff, registrationMode: policy.registrationMode,
     swapApprovalRequired: policy.swapApprovalRequired,
-    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales, attendance, branch_support: support },
+    rules: { ...(policy.rules ?? {}), pay: { ...savedPay, overtime, night }, sales, attendance, branch_support: support,
+      attendance_bonus: bonus,
+      violations: bonus.enabled ? { ...BONUS_CODES, ...(policy.rules?.violations ?? {}) } : policy.rules?.violations },
   }), t('advanced.saved'));
 
   return (
@@ -165,6 +180,25 @@ export function AdvancedSettings({ storeId, policy }: { storeId: string; policy:
                 {SUPPORT_AMOUNTS.map((a) => <Chip key={a} label={money(a)} selected={support.amount === a}
                   onPress={() => setSupport({ ...support, amount: a })} />)}
               </Row>
+            ) : null}
+          </View>
+
+          <View style={{ gap: 10 }}>
+            <Toggle label={t('bonus.title')} hint={t('bonus.hint')} value={bonus.enabled}
+              onChange={(v) => setBonus({ ...bonus, enabled: v })} />
+            {bonus.enabled ? (
+              <>
+                <Row gap={8} wrap>
+                  <Txt variant="small" muted>{t('bonus.amount')}</Txt>
+                  {BONUS_AMOUNTS.map((a) => <Chip key={a} label={money(a)} selected={bonus.amount === a}
+                    onPress={() => setBonus({ ...bonus, amount: a })} />)}
+                </Row>
+                <Row gap={8} wrap>
+                  <Txt variant="small" muted>{t('bonus.perPoint')}</Txt>
+                  {PER_POINT.map((a) => <Chip key={a} label={money(a)} selected={bonus.per_point === a}
+                    onPress={() => setBonus({ ...bonus, per_point: a })} />)}
+                </Row>
+              </>
             ) : null}
           </View>
 

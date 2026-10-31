@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { BranchesSection } from '@/components/branches';
+import { IssueSheet } from '@/components/issueSheet';
+import { ManagerStoresSection } from '@/components/managers';
 import { StatusBadge, codeLabel } from '@/components/domain';
 import { useAction } from '@/components/toast';
 import { Avatar, Button, Card, Chip, ErrorState, Field, Loading, Row, Screen, Section, Segmented, Sheet, Txt, confirm } from '@/components/ui';
@@ -60,6 +62,7 @@ export default function EmployeeScreen() {
       </Row>
 
       {e.status !== 'ended' ? <BranchesSection employmentId={id} /> : null}
+      {e.status !== 'ended' && e.role === 'employee' ? <ManagerStoresSection employmentId={id} /> : null}
 
       <Section title={t('employee.history')}>
         {points.isLoading ? <Loading /> : (points.data?.entries ?? []).length === 0 ? <Txt muted>{t('employee.noPoints')}</Txt>
@@ -161,21 +164,3 @@ function PointsSheet({ visible, onClose, employmentId, awards }: { visible: bool
   );
 }
 
-function IssueSheet({ visible, onClose, employmentId, codes }: { visible: boolean; onClose: () => void; employmentId: string; codes: Record<string, { points: number }> }) {
-  const api = useApi();
-  const { t } = useI18n();
-  const [run, busy] = useAction();
-  const [code, setCode] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
-  return (
-    <Sheet visible={visible} onClose={onClose} title={t('employee.reportTitle')}>
-      <Row gap={8} wrap>
-        {Object.entries(codes).map(([c, v]) => <Chip key={c} label={`${codeLabel(c)} (${v.points})`} selected={code === c} onPress={() => setCode(c)} />)}
-      </Row>
-      <Field label={t('employee.whatHappened')} value={description} onChangeText={setDescription} multiline style={{ minHeight: 80 }} />
-      <Txt variant="small" muted>{t('employee.reportNote')}</Txt>
-      <Button title={t('employee.report')} icon="flag-outline" full loading={busy === 'v'} disabled={!code || !description.trim()}
-        onPress={async () => { if (await run('v', () => api.reportViolation({ employmentId, code: code!, description }), t('employee.reported'))) onClose(); }} />
-    </Sheet>
-  );
-}

@@ -4,7 +4,7 @@ import React from 'react';
 import { useSyncAccount } from '@/components/accountSwitcher';
 import { AppTabs } from '@/components/tabs';
 import { useI18n } from '@/i18n';
-import { useOrgKey } from '@/state/queries';
+import { useManagedStores, useManagerTodo, useOrgKey } from '@/state/queries';
 import { useApi, useSession } from '@/state/session';
 
 export default function StaffTabs() {
@@ -15,12 +15,15 @@ export default function StaffTabs() {
   const { session } = useSession();
   const swaps = useQuery({ queryKey: ['swaps', org, 'all'], queryFn: () => api.swaps() });
   const waiting = (swaps.data ?? []).filter((s) => s.status === 'requested' && s.to.userId === session?.userId).length;
+  const managed = useManagedStores();
+  const todo = useManagerTodo();
   return (
     <AppTabs tabs={[
       { name: 'index', title: t('tabs.home'), icon: 'home-outline' },
       { name: 'find', title: t('tabs.find'), icon: 'search-outline' },
       { name: 'shifts', title: t('tabs.myShifts'), icon: 'calendar-outline' },
       { name: 'swaps', title: t('tabs.swaps'), icon: 'swap-horizontal-outline', badge: waiting },
+      { name: 'manage', title: t('tabs.manage'), icon: 'briefcase-outline', badge: todo, hidden: !managed.data?.length },
       { name: 'me', title: t('tabs.me'), icon: 'person-circle-outline' },
     ]} />
   );

@@ -45,6 +45,8 @@ export interface PolicyRules {
   points?: { allow_negative_balance?: boolean };
   /** Bonus per shift for staff whose home store (first store they joined) is another store of the business. */
   branch_support?: { enabled?: boolean; amount?: number };
+  /** Monthly bonus minus per_point for each penalty point and the cost of damaged property; paid with pay. */
+  attendance_bonus?: { enabled?: boolean; amount?: number; per_point?: number };
   violations?: Record<string, { points: number }>;
   awards?: Record<string, { points: number }>;
   rewards?: Record<string, { min_points: number; points_cost: number; amount: number; window: string }>;
@@ -142,9 +144,13 @@ export interface ViolationView {
   id: UUID; employmentId: UUID; storeId: UUID; assignmentId: UUID | null; code: string; occurredAt: ISODateTime;
   status: 'reported' | 'confirmed' | 'dismissed' | 'reversed'; description: string; points: number | null;
   decidedAt: ISODateTime | null;
+  /** cost of store property damaged (deducted from the attendance bonus) */
+  damageAmount?: number | null;
 }
+/** points: this case's penalty points (negative), omitted = the code's points in the store's rules. */
 export interface CreateViolation {
   employmentId: UUID; assignmentId?: UUID | null; code: string; occurredAt?: ISODateTime | null; description: string;
+  points?: number; damageAmount?: number;
 }
 export interface PointEntryView { id: UUID; delta: number; kind: string; reason: string; effectiveAt: ISODateTime }
 export interface PointsView { employmentId: UUID; balance: number; entries: PointEntryView[] }
@@ -344,3 +350,20 @@ export interface BranchesView { membershipId: UUID; displayName: string; homeSto
 export interface Borrowable {
   fromEmploymentId: UUID; membershipId: UUID; displayName: string; fromStoreId: UUID; fromStoreName: string; busy: boolean;
 }
+
+// ---------------------------------------------------------------- the attendance bonus board ("bảng điểm chuyên cần")
+/** Per person at stores with an attendance bonus: the bonus, penalty points and damages of the range, what is left. */
+export interface AttendanceBonusBoard {
+  from: ISODate; to: ISODate;
+  rows: {
+    employmentId: UUID; displayName: string; storeId: UUID; storeName: string; currency: string; base: number; perPoint: number;
+    points: number; damages: number; remaining: number; pending: number;
+    items: { violationId: UUID; occurredAt: ISODateTime; code: string; description: string; points?: number | null;
+      damageAmount?: number | null; status: 'reported' | 'confirmed' }[];
+  }[];
+}
+
+// ---------------------------------------------------------------- store managers ("Quản lý")
+/** The stores a staff member manages; empty = not a manager. */
+export interface ManagerStores { membershipId: UUID; displayName: string; storeIds: UUID[] }
+export interface ManagedStore { storeId: UUID; storeName: string }

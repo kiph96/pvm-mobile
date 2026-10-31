@@ -23,7 +23,7 @@ export const vi: Dict = {
   role: { owner: 'Chủ cửa hàng', admin: 'Quản lý', payroll: 'Kế toán', employee: 'Nhân viên' },
   code: {
     LATE: 'Đi trễ', NO_SHOW: 'Vắng mặt', EARLY_LEAVE: 'Về sớm', MISSED_CLOCK_OUT: 'Quên chấm công ra',
-    PERFECT_SHIFT: 'Ca hoàn hảo', ON_TIME_STREAK_10: 'Đúng giờ 10 ca liên tiếp', MONTHLY_BONUS: 'Thưởng tháng', BRANCH_SUPPORT: 'Thưởng ca hỗ trợ chi nhánh',
+    PERFECT_SHIFT: 'Ca hoàn hảo', ON_TIME_STREAK_10: 'Đúng giờ 10 ca liên tiếp', MONTHLY_BONUS: 'Thưởng tháng', BRANCH_SUPPORT: 'Thưởng ca hỗ trợ chi nhánh', DAY_OFF: 'Nghỉ quá số ngày cho phép', DAMAGE: 'Làm hư tài sản quán', ATTENDANCE_BONUS: 'Thưởng chuyên cần',
   },
   time: {
     today: 'Hôm nay', tomorrow: 'Ngày mai', yesterday: 'Hôm qua', justNow: 'vừa xong', minAgo: '{n} phút trước',
@@ -182,7 +182,7 @@ export const vi: Dict = {
   },
   tabs: {
     home: 'Trang chủ', schedule: 'Lịch ca', team: 'Nhân viên', stores: 'Cửa hàng', more: 'Thêm', find: 'Tìm ca',
-    myShifts: 'Ca của tôi', swaps: 'Đổi ca', me: 'Tôi',
+    myShifts: 'Ca của tôi', swaps: 'Đổi ca', manage: 'Quản lý', me: 'Tôi',
   },
   screens: {
     preferences: 'Ca mong muốn', shift: 'Ca làm', employee: 'Nhân viên', store: 'Cài đặt cửa hàng', payroll: 'Bảng lương', billing: 'Gói dịch vụ',
@@ -191,6 +191,7 @@ export const vi: Dict = {
     privacy: 'Quyền riêng tư',
     storeWeek: 'Lịch tuần của cửa hàng',
     staffSummary: 'Tổng hợp nhân sự',
+    attendanceBonus: 'Bảng điểm chuyên cần',
   },
   owner: {
     greeting: 'Chào {part}, {name}', notifications: 'Thông báo', stores: 'Cửa hàng', team: 'Nhân viên', shortToday: 'Thiếu người hôm nay',
@@ -330,7 +331,7 @@ export const vi: Dict = {
   },
   advanced: {
     title: 'Nâng cao', heading: 'Chấm công, phụ cấp thêm giờ, làm đêm, doanh số & hoa hồng', allOff: 'Đang tắt hết — bật khi cửa hàng cần.',
-    onList: 'Đang bật: {list}', attendanceOn: 'Chấm công', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%', supportOn: 'Hỗ trợ chi nhánh {amount}/ca',
+    onList: 'Đang bật: {list}', attendanceOn: 'Chấm công', overtimeOn: 'Thêm giờ', nightOn: 'Làm đêm', salesOn: 'Hoa hồng {n}%', supportOn: 'Hỗ trợ chi nhánh {amount}/ca', attendanceBonusOn: 'Thưởng chuyên cần {amount}',
     save: 'Lưu cài đặt nâng cao', saved: 'Đã lưu cài đặt nâng cao',
   },
   branches: {
@@ -342,12 +343,36 @@ export const vi: Dict = {
     borrowTitle: 'Mượn từ chi nhánh khác', borrow: 'Mượn', busy: 'Bận ca khác', borrowed: 'Đã mượn {name} từ {store}',
     borrowNote: 'Người được mượn tự được thêm vào cửa hàng này, lương như ở chi nhánh của họ.',
   },
+  bonus: {
+    menu: 'Bảng điểm chuyên cần', menuSub: 'Thưởng chuyên cần còn lại sau điểm trừ và hư tài sản',
+    title: 'Thưởng chuyên cần', hint: 'Mỗi người bắt đầu kỳ lương với khoản thưởng này. Mỗi điểm trừ và tài sản làm hư được trừ vào; phần còn lại trả cùng lương.',
+    amount: 'Thưởng mỗi kỳ', perPoint: 'Trừ mỗi điểm',
+    points: 'Điểm trừ', remaining: 'Còn lại', base: 'Thưởng ban đầu', damage: 'Hư tài sản', pending: '{n} chờ duyệt',
+    none: 'Không có vi phạm', off: 'Chưa cửa hàng nào bật thưởng chuyên cần',
+    offMsg: 'Bật trong Cửa hàng → Nâng cao → Thưởng chuyên cần.',
+    calc: '{base} − {points} điểm × {per} − {damages} hư tài sản = {left}',
+    tapHint: 'Bấm vào một dòng để xem từng vi phạm. Chỉ vi phạm đã xác nhận mới bị trừ. Đơn vị: {unit}.',
+    pendingNote: 'Chưa trừ: vi phạm chờ bạn xác nhận',
+    customPoints: 'Điểm trừ lần này', damageAmount: 'Giá trị tài sản hư (đ)', damageHint: 'Trừ vào thưởng chuyên cần, ví dụ 1 ly trà 12.000 đ.',
+  },
+  manage: {
+    title: 'Quản lý cửa hàng', subtitle: 'Duyệt ca, đổi ca, vi phạm và điều động nhân sự',
+    week: 'Lịch tuần', report: 'Báo cáo vi phạm', requests: 'Yêu cầu nhận ca ({n})', swaps: 'Đổi ca chờ duyệt ({n})',
+    violations: 'Vi phạm chờ xác nhận ({n})', nothing: 'Không có gì chờ bạn duyệt',
+    confirm: 'Xác nhận', dismiss: 'Bỏ qua', confirmed: 'Đã xác nhận vi phạm', dismissed: 'Đã bỏ qua vi phạm',
+    hint: 'Xếp người hoặc mượn người từ chi nhánh khác: mở Lịch tuần rồi chọn ca.',
+  },
+  managers: {
+    title: 'Quyền quản lý', hint: 'Quản lý được duyệt ca, đổi ca, chấm công, vi phạm và điều động nhân sự ở các cửa hàng được chọn. Không xem lương, không chạy bảng lương, không đổi cài đặt cửa hàng.',
+    save: 'Lưu quyền quản lý', saved: 'Đã lưu quyền quản lý', none: 'Không quản lý cửa hàng nào',
+  },
   support: {
     title: 'Thưởng ca hỗ trợ chi nhánh',
     hint: 'Nhân viên của chi nhánh khác làm ca ở cửa hàng này được thưởng thêm mỗi ca, trả vào lương như tiền thưởng.',
     perShift: 'Mỗi ca',
   },
   summary: {
+    prevMonth: 'Tháng trước', nextMonth: 'Tháng sau',
     compact: 'Tóm tắt', fullTable: 'Bảng đầy đủ', shiftsShort: 'Ca', tapHint: 'Bấm vào một dòng để xem chi tiết. ⇄ = có ca hỗ trợ chi nhánh khác. Đơn vị: {unit}.', homeOf: 'Chi nhánh chính: {store}', absent: 'Ca vắng', support: 'Hỗ trợ',
     toPay: 'Tổng tiền phải trả', wagesBonus: 'Lương {wages} · Thưởng {bonus}',
     supportShifts: 'Ca hỗ trợ',
@@ -518,7 +543,7 @@ export const vi: Dict = {
     timesheetApproved: 'Giờ làm ngày {date} của bạn đã được duyệt',
     wageChanged: 'Lương của bạn nay là {amount}',
     employmentEnded: 'Bạn đã nghỉ việc tại cửa hàng này',
-    joinRequested: '{name} muốn tham gia {store}', branchAdded: 'Bạn có thể làm thêm ở {store}', joinApproved: 'Bạn đã có thể nhận ca tại {store}',
+    joinRequested: '{name} muốn tham gia {store}', branchAdded: 'Bạn có thể làm thêm ở {store}', managerGranted: 'Bạn được giao quản lý {stores}', joinApproved: 'Bạn đã có thể nhận ca tại {store}',
     joinDeclined: 'Yêu cầu tham gia cửa hàng của bạn đã bị từ chối',
     employeeLimitExceeded: '{store} đã vượt giới hạn {n} nhân viên',
     payslipReady: 'Phiếu lương {period} của bạn đã sẵn sàng',

@@ -51,3 +51,36 @@ export function usePrivacy() {
   const { session } = useSession();
   return useQuery({ queryKey: ['privacy', session?.userId], queryFn: api.privacy, enabled: !!session, staleTime: 5 * 60_000 });
 }
+
+/** Stores the signed-in staff member manages ("Quản lý"); owners and admins manage every store and get none here. */
+export function useManagedStores() {
+  const api = useApi();
+  const org = useOrgKey();
+  const { session, isManager } = useSession();
+  return useQuery({ queryKey: ['managedStores', org], queryFn: api.myManagedStores, enabled: !!session?.workspace && !isManager });
+}
+
+/** Owner / admin, or manager of this store: may approve its shifts, swaps and violations and move its staff. */
+export function useCanManage(storeId: string | null | undefined) {
+  const { isManager } = useSession();
+  const managed = useManagedStores();
+  return isManager || (!!storeId && !!managed.data?.some((s) => s.storeId === storeId));
+}
+
+/** What waits for a store manager across their stores: shift requests, swaps to approve, violations to confirm. */
+export function useManagerTodo() {
+  const api = useApi();
+  const org = useOrgKey();
+  const managed = useManagedStores();
+  const ids = (managed.data ?? []).map((s) => s.storeId);
+  const on = ids.length > 0;
+  const requests = useQuery({ queryKey: ['requests', org, 'managed'], queryFn: () => api.openRequests(), enabled: on });
+  const swaps = useQuery({ queryKey: ['swaps', org, 'accepted'], queryFn: () => api.swaps('accepted'), enabled: on });
+  const violations = useQueries({
+    queries: ids.map((id) => ({ queryKey: ['violations', org, 'store', id, 'reported'],
+      queryFn: () => api.violations({ storeId: id, status: 'reported' }) })),
+  });
+  return (requests.data ?? []).filter((r) => r.status === 'pending' || r.status === 'waitlisted').length
+    + (swaps.data ?? []).filter((s) => ids.includes(s.from.storeId)).length
+    + violations.reduce((n, v) => n + (v.data?.length ?? 0), 0);
+}
